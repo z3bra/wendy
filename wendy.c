@@ -85,7 +85,7 @@ main (int argc, char **argv)
     }
 
     /* test given arguments */
-    if (!directory)     { directory = DEFAULT_directory; }
+    if (!directory) { directory = DEFAULT_directory; }
     if (!timeout)   { timeout = DEFAULT_CHECK; }
     if (!cmd)       { usage(); }
     if (!mask)      { mask |= IN_CREATE; }
