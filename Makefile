@@ -1,7 +1,6 @@
 # BEGINNING OF THE FILE
 
 # Compilation settings
-PROG=wendy
 CC=gcc
 CFLAGS=-Wall -I inc --std=c99 -pedantic
 LDFLAGS=
@@ -9,28 +8,28 @@ LDFLAGS=
 # Command paths
 RM=/bin/rm
 
+.SUFFIXE :
+.SUFFIXES : .c .o .h
 .PHONY : all list mrproper clean init
 
-$(PROG) : $(PROG).o
-	@echo -e "LD $(PROG)"
-	@$(CC) $^ -o$@ $(LDFLAGS)
-
-$(PROG).o : $(PROG).c
+.c.o:
 	@echo -e "CC $<"
-	@$(CC) -c $(CFLAGS) $< -o $@
+	@${CC} -c $^ -o $< ${CFLAGS}
 
-all : clean $(PROG)
+wendy : wendy.o
+	@echo -e "LD wendy"
+	@${CC} $^ -o $@ ${LDFLAGS}
 
-mrproper : clean
-	$(RM) $(PROG)
+all : init wendy
 
 clean :
-	$(RM) -f *.o
-	$(RM) -f *~
+	${RM} wendy
+	${RM} -f *.o
+	${RM} -f *~
 
-init :
-	@echo "CC = $(CC)"
-	@echo "CFLAGS = $(CFLAGS)"
-	@echo "LDFLAGS = $(LDFLAGS)"
-	@echo
+install :
+	install -D -m0755 wendy ${DESTDIR}${PREFIX}/bin/wendy
+
+uninstall:
+	${RM} ${DESTDIR}${PREFIX}/bin/wendy
 ## EOF
