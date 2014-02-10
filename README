@@ -1,0 +1,24 @@
+  ╻ ╻┏━╸┏┓╻╺┳┓╻ ╻
+  ┃╻┃┣╸ ┃┗┫ ┃┃┗┳┛
+  ┗┻┛┗━╸╹ ╹╺┻┛ ╹
+                -- by z3bra
+===========================
+
+(W)atch (ENT)ire (D)irector(Y) is an inotify-based directory watcher.
+
+With wendy, you can watch event in a directory or on a file, and launch a
+specific command when an event occurs.
+
+The program is made the moire simple possible, to leave the room to unlimited
+uses. Be creative !
+
+Here are some examples:
+
+    # Tell me whenever I have a new mail
+    wendy -C ~/mails/INBOX/new -t 60 -e espeak "You got a new mail"
+
+    # On-the-fly recompilation
+    wendy -M -f ~/src/dev/program/source.c -t 1 -e make
+
+    # Get up to date with community based projects
+    wendy -DMC -f /mnt/nfs/project/ -t 30 -e notify-send 'project updated'
