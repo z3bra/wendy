@@ -31,7 +31,7 @@
 /* maximum number of event * queuing at the same time */
 #define BUF_LEN         (512 * (EVENT_SIZE+16))
 
-#define DEFAULT_directory   "/var/spool/mail/directory/new"
+#define DEFAULT_FILE   "/var/spool/mail/directory/new"
 #define DEFAULT_CHECK   300 /* defaults to 5 minutes */
 
 extern char **environ;
@@ -39,12 +39,12 @@ extern char **environ;
 void
 usage()
 {
-    fputs("usage: wendy [-C] [-D] [-M] [-d directory] [-t timeout] "
+    fputs("usage: wendy [-C] [-D] [-M] [-f file] [-t timeout] "
           "-e command [arguments]\n"
           "\t-C           : raise creation events\n"
           "\t-D           : raise deletion events\n"
           "\t-M           : raise modification events\n"
-          "\t-d directory : directory to watch\n"
+          "\t-f file      : file to watch (everything is a file)\n"
           "\t-t timeout   : time between event check (in seconds)\n"
           "\t-e command   : command to launch (must be the last argument!)\n",
          stdout);
@@ -67,7 +67,7 @@ main (int argc, char **argv)
 {
     int  fd, wd, len, mask = 0, i = 0, timeout = 0, ignore = 0;
     char buf[BUF_LEN];
-    char *directory = NULL, **cmd = NULL;
+    char *file = NULL, **cmd = NULL;
     struct inotify_event *ev;
 
     if ((argc == 2 && argv[1][0] == '-' && argv[1][1] == 'h')) usage();
@@ -78,14 +78,14 @@ main (int argc, char **argv)
             case 'C': mask |= IN_CREATE; break;
             case 'D': mask |= IN_DELETE; break;
             case 'M': mask |= IN_MODIFY; break;
-            case 'd': directory = argv[++i]; break;
+            case 'f': file = argv[++i]; break;
             case 't': timeout = atoi(argv[++i]); break;
             case 'e': cmd = &argv[++i]; ignore=1; break;
         }
     }
 
     /* test given arguments */
-    if (!directory) { directory = DEFAULT_directory; }
+    if (!file)      { file = DEFAULT_FILE; }
     if (!timeout)   { timeout = DEFAULT_CHECK; }
     if (!cmd)       { usage(); }
     if (!mask)      { mask |= IN_CREATE; }
@@ -95,8 +95,8 @@ main (int argc, char **argv)
     if (fd < 0)
         perror("inotify_init");
 
-    /* add a watcher on the directory */
-    wd  = inotify_add_watch(fd, directory, mask);
+    /* add a watcher on the file */
+    wd  = inotify_add_watch(fd, file, mask);
 
     if (wd < 0)
         perror("inotify_add_watch");
