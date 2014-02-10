@@ -14,7 +14,7 @@ RM=/bin/rm
 
 .c.o:
 	@echo -e "CC $<"
-	@${CC} -c $^ -o $< ${CFLAGS}
+	@${CC} -c $< -o $@ ${CFLAGS}
 
 wendy : wendy.o
 	@echo -e "LD wendy"

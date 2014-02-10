@@ -26,8 +26,8 @@
 /* maximum number of event * queuing at the same time */
 #define BUF_LEN         (512 * (EVENT_SIZE+16))
 
-#define DEFAULT_FILE   "/var/spool/mail/directory/new"
-#define DEFAULT_CHECK   300 /* defaults to 5 minutes */
+#define DEFAULT_FILE    "." /* defaults to current directory */
+#define DEFAULT_CHECK   1   /* defaults to 1 second */
 
 extern char **environ;
 
