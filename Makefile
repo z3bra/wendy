@@ -23,9 +23,7 @@ wendy : wendy.o
 all : init wendy
 
 clean :
-	${RM} wendy
-	${RM} -f *.o
-	${RM} -f *~
+	${RM} -f wendy *.o *~
 
 install :
 	install -D -m0755 wendy ${DESTDIR}${PREFIX}/bin/wendy
