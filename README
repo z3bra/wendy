@@ -12,13 +12,45 @@ specific command when an event occurs.
 The program is made the moire simple possible, to leave the room to unlimited
 uses. Be creative !
 
+Every event raised by inotify is handled. Just sum them up to watch multiple
+event at the same time. Here is the full table:
+(see inotify(1) for a better explanation of those events)
+
+    IN_ACCESS ........ 1
+    IN_MODIFY ........ 2
+    IN_ATTRIB ........ 4
+    IN_CLOSE_WRITE ... 8
+    IN_CLOSE_NOWRITE . 16
+    IN_OPEN .......... 32
+    IN_MOVED_FROM .... 64
+    IN_MOVED_TO ...... 128
+    IN_CREATE ........ 256
+    IN_DELETE ........ 512
+    IN_DELETE_SELF ... 1024
+    IN_MOVE_SELF ..... 2048
+
+To watch for both creation AND deletion in a directory, do some math:
+
+    256 + 512 = 768
+
+then, pass that value to wendy so that she can watch after both of them (did I
+just say 'she'?).
+
+For more convenience, the IN_CREATE, IN_DELETE and IN_MODIFY events are bound to
+(respectively) -C, -D and -M.
+
 Here are some examples:
 
     # Tell me whenever I have a new mail
-    wendy -C ~/mails/INBOX/new -t 60 -e espeak "You got a new mail"
+    wendy -C -d ~/mails/INBOX/new -t 60 -e espeak "You got a new mail"
 
     # On-the-fly recompilation
-    wendy -M -f ~/src/dev/program/source.c -t 1 -e make
+    wendy -M -q -d ~/src/dev/program/ -f source.c -t 1 -e make
+    # or eventually
+    wendy -l | grep -i close_write
+    IN_CLOSE_WRITE ... 8
+    wendy -m 8 -q -d ~/src/dev/program/ -f source.c -t 1 -e make
+
 
     # Get up to date with community based projects
-    wendy -D -M -C -f /mnt/nfs/project/ -t 30 -e notify-send 'project updated'
+    wendy -D -M -C -d /mnt/nfs/project/ -t 30 -e notify-send 'project updated'
