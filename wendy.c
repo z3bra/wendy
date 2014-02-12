@@ -169,8 +169,7 @@ main (int argc, char **argv)
              * If you don't undersand this sentence, don't worry. Me neither.
              * Just trust the if().
              */
-            if (cmd && !(file && strncmp(file, ev->name, 255))) {
-
+            if (cmd) {
                 /* OMG a new event ! Quick, raise an alert ! */
                 if (!fork()) { execvpe(cmd[0], cmd, environ); }
             }
