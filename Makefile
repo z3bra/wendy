@@ -1,16 +1,7 @@
-# BEGINNING OF THE FILE
+include config.mk
 
-# Compilation settings
-CC=gcc
-CFLAGS=-Wall -I inc --std=c99 -pedantic
-LDFLAGS=
-
-# Command paths
-RM=/bin/rm
-
-.SUFFIXE :
-.SUFFIXES : .c .o .h
-.PHONY : all list mrproper clean init
+.SUFFIXES : .c .o
+.PHONY : all list clean install uninstall
 
 .c.o:
 	@echo -e "CC $<"
@@ -20,16 +11,18 @@ wendy : wendy.o
 	@echo -e "LD wendy"
 	@${CC} $^ -o $@ ${LDFLAGS}
 
-all : init wendy
+all : wendy
 
 clean :
 	${RM} wendy
 	${RM} -f *.o
 	${RM} -f *~
 
+path:
+	@echo PREFIX: ${PREFIX}
+
 install :
 	install -D -m0755 wendy ${DESTDIR}${PREFIX}/bin/wendy
 
 uninstall:
 	${RM} ${DESTDIR}${PREFIX}/bin/wendy
-## EOF
