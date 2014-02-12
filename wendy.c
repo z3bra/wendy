@@ -98,7 +98,7 @@ main (int argc, char **argv)
     int  fd, wd, len, i = 0, timeout = 0, ignore = 0, quiet = 0;
     uint32_t mask = 0;
     char buf[BUF_LEN];
-    char *dir = NULL, *file = NULL, **cmd = NULL;
+    char *file = NULL, **cmd = NULL;
     struct inotify_event *ev;
 
     if ((argc == 2 && argv[1][0] == '-' && argv[1][1] == 'h')) usage();
@@ -120,7 +120,7 @@ main (int argc, char **argv)
     }
 
     /* test given arguments */
-    if (!dir)       { dir = DEFAULT_FILE; }
+    if (!file)      { file = DEFAULT_FILE; }
     if (!timeout)   { timeout = DEFAULT_CHECK; }
 
     /* get file descriptor */
@@ -129,13 +129,13 @@ main (int argc, char **argv)
         perror("inotify_init");
 
     /* add a watcher on the file */
-    wd  = inotify_add_watch(fd, dir, mask);
+    wd  = inotify_add_watch(fd, file, mask);
 
     if (wd < 0)
         perror("inotify_add_watch");
 
     if (!quiet) {
-        printf( "watching directory %s with event mask %u\n", dir, mask);
+        printf( "watching file %s with event mask %u\n", file, mask);
     }
 
     /* start looping */
