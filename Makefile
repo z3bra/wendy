@@ -14,9 +14,7 @@ wendy : wendy.o
 all : wendy
 
 clean :
-	${RM} wendy
-	${RM} -f *.o
-	${RM} -f *~
+	${RM} -f wendy *.o *~
 
 path:
 	@echo PREFIX: ${PREFIX}

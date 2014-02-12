@@ -34,16 +34,51 @@ extern char **environ;
 void
 usage()
 {
-    fputs("usage: wendy [-C] [-D] [-M] [-f file] [-t timeout] "
-          "-e command [arguments]\n"
-          "\t-C           : raise creation events\n"
+    fputs("usage: wendy [-C] [-D] [-M] [-m mask] [-l] [-f file] [-t timeout] [-q] "
+          "[-e command [args] ..]\n"
+          "\t-C           : raise creation events (default)\n"
           "\t-D           : raise deletion events\n"
           "\t-M           : raise modification events\n"
+          "\t-m mask      : set mask manually (see -l))\n"
+          "\t-l           : list events mask values\n"
           "\t-f file      : file to watch (everything is a file)\n"
           "\t-t timeout   : time between event check (in seconds)\n"
+          "\t-q           : don't talk to me, program\n"
           "\t-e command   : command to launch (must be the last argument!)\n",
          stdout);
     exit(1);
+}
+
+void
+list_events()
+{
+    fprintf(stdout,
+            "IN_ACCESS ........ %u\n"
+            "IN_MODIFY ........ %u\n"
+            "IN_ATTRIB ........ %u\n"
+            "IN_CLOSE_WRITE ... %u\n"
+            "IN_CLOSE_NOWRITE . %u\n"
+            "IN_OPEN .......... %u\n"
+            "IN_MOVED_FROM .... %u\n"
+            "IN_MOVED_TO ...... %u\n"
+            "IN_CREATE ........ %u\n"
+            "IN_DELETE ........ %u\n"
+            "IN_DELETE_SELF ... %u\n"
+            "IN_MOVE_SELF ..... %u\n",
+            IN_ACCESS,
+            IN_MODIFY,
+            IN_ATTRIB,
+            IN_CLOSE_WRITE,
+            IN_CLOSE_NOWRITE,
+            IN_OPEN,
+            IN_MOVED_FROM,
+            IN_MOVED_TO,
+            IN_CREATE,
+            IN_DELETE,
+            IN_DELETE_SELF,
+            IN_MOVE_SELF
+           );
+    exit(0);
 }
 
 int
@@ -60,7 +95,8 @@ execvpe(const char *program, char **argv, char **envp)
 int
 main (int argc, char **argv)
 {
-    int  fd, wd, len, mask = 0, i = 0, timeout = 0, ignore = 0;
+    int  fd, wd, len, i = 0, timeout = 0, ignore = 0, quiet = 0;
+    uint32_t mask = 0;
     char buf[BUF_LEN];
     char *file = NULL, **cmd = NULL;
     struct inotify_event *ev;
@@ -68,22 +104,24 @@ main (int argc, char **argv)
     if ((argc == 2 && argv[1][0] == '-' && argv[1][1] == 'h')) usage();
 
     /* parse option given. see usage() above */
-    for(i = 1; (i + 1 < argc) && (argv[i][0] == '-') && !ignore; i++) {
+    for(i = 1; (i < argc) && (argv[i][0] == '-') && !ignore; i++) {
         switch (argv[i][1]) {
             case 'C': mask |= IN_CREATE; break;
             case 'D': mask |= IN_DELETE; break;
             case 'M': mask |= IN_MODIFY; break;
+            case 'm': mask |= atoi(argv[++i]); break;
+            case 'l': list_events(); break;
+            case 'q': quiet = 1; break;
             case 'f': file = argv[++i]; break;
             case 't': timeout = atoi(argv[++i]); break;
             case 'e': cmd = &argv[++i]; ignore=1; break;
+            default: usage();
         }
     }
 
     /* test given arguments */
     if (!file)      { file = DEFAULT_FILE; }
     if (!timeout)   { timeout = DEFAULT_CHECK; }
-    if (!cmd)       { usage(); }
-    if (!mask)      { mask |= IN_CREATE; }
 
     /* get file descriptor */
     fd = inotify_init();
@@ -96,8 +134,12 @@ main (int argc, char **argv)
     if (wd < 0)
         perror("inotify_add_watch");
 
+    if (!quiet) {
+        printf( "watching file %s with event mask %u\n", file, mask);
+    }
+
     /* start looping */
-    while (1) {
+    for (;;) {
         /* get every event raised, and queue them */
         len = read(fd, buf, BUF_LEN);
 
@@ -114,13 +156,23 @@ main (int argc, char **argv)
             /* get events one by one */
             ev = (struct inotify_event *) &buf[i]; 
 
-            if (ev->len > 0) {
+            if (!quiet && ev->len > 0) {
                 printf("event on file %s: %u\n", ev->name, ev->mask);
             }
 
-            /* OMG a new event ! Quick, raise an alert ! */
-            if (!fork()) {
-                execvpe(cmd[0], cmd, environ);
+            /*
+             * do not do anything if no command given.
+             * Also only execute the command if the file concerned by the event
+             * is the one we're watching, or if we're not looking for a specific
+             * file.
+             *
+             * If you don't undersand this sentence, don't worry. Me neither.
+             * Just trust the if().
+             */
+            if (cmd && !(file && strncmp(file, ev->name, 255))) {
+
+                /* OMG a new event ! Quick, raise an alert ! */
+                if (!fork()) { execvpe(cmd[0], cmd, environ); }
             }
 
             /* jump to the next one */
