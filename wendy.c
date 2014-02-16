@@ -64,7 +64,9 @@ list_events()
             "IN_CREATE ........ %u\n"
             "IN_DELETE ........ %u\n"
             "IN_DELETE_SELF ... %u\n"
-            "IN_MOVE_SELF ..... %u\n",
+            "IN_MOVE_SELF ..... %u\n"
+            "IN_ALL_EVENTS .... %u\n"
+            "IN_UNMOUNT ....... %u\n",
             IN_ACCESS,
             IN_MODIFY,
             IN_ATTRIB,
@@ -76,7 +78,9 @@ list_events()
             IN_CREATE,
             IN_DELETE,
             IN_DELETE_SELF,
-            IN_MOVE_SELF
+            IN_MOVE_SELF,
+            IN_ALL_EVENTS,
+            IN_UNMOUNT
            );
     exit(0);
 }
@@ -160,7 +164,7 @@ add_watch:
             ev = (struct inotify_event *) &buf[i];
 
             if (ev->mask & IN_IGNORED) {
-                printf("File watch removed. Recreating inotify watch\n");
+                printf("watch removed, attemting to create another\n");
                 goto add_watch;
             }
 
