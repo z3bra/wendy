@@ -128,11 +128,14 @@ main (int argc, char **argv)
     if (fd < 0)
         perror("inotify_init");
 
+add_watch:
     /* add a watcher on the file */
     wd  = inotify_add_watch(fd, file, mask);
 
-    if (wd < 0)
+    if (wd < 0) {
         perror("inotify_add_watch");
+        exit(1);
+    }
 
     if (!quiet) {
         printf( "watching file %s with event mask %u\n", file, mask);
@@ -140,6 +143,7 @@ main (int argc, char **argv)
 
     /* start looping */
     for (;;) {
+
         /* get every event raised, and queue them */
         len = read(fd, buf, BUF_LEN);
 
@@ -149,15 +153,20 @@ main (int argc, char **argv)
 
         i = 0;
 
-
         /* treat all events queued */
         while (i < len) {
 
             /* get events one by one */
-            ev = (struct inotify_event *) &buf[i]; 
+            ev = (struct inotify_event *) &buf[i];
 
-            if (!quiet && ev->len > 0) {
-                printf("event on file %s: %u\n", ev->name, ev->mask);
+            if (ev->mask & IN_IGNORED) {
+                printf("File watch removed. Recreating inotify watch\n");
+                goto add_watch;
+            }
+
+            if (!quiet) {
+                printf("event on file %s: %u\n",
+                        ev->len ? ev->name : file, ev->mask);
             }
 
             /*
