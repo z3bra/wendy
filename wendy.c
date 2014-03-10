@@ -64,7 +64,9 @@ list_events()
             "IN_CREATE ........ %u\n"
             "IN_DELETE ........ %u\n"
             "IN_DELETE_SELF ... %u\n"
-            "IN_MOVE_SELF ..... %u\n",
+            "IN_MOVE_SELF ..... %u\n"
+            "IN_ALL_EVENTS .... %u\n"
+            "IN_UNMOUNT ....... %u\n",
             IN_ACCESS,
             IN_MODIFY,
             IN_ATTRIB,
@@ -76,7 +78,9 @@ list_events()
             IN_CREATE,
             IN_DELETE,
             IN_DELETE_SELF,
-            IN_MOVE_SELF
+            IN_MOVE_SELF,
+            IN_ALL_EVENTS,
+            IN_UNMOUNT
            );
     exit(0);
 }
@@ -128,11 +132,14 @@ main (int argc, char **argv)
     if (fd < 0)
         perror("inotify_init");
 
+add_watch:
     /* add a watcher on the file */
     wd  = inotify_add_watch(fd, file, mask);
 
-    if (wd < 0)
+    if (wd < 0) {
         perror("inotify_add_watch");
+        exit(1);
+    }
 
     if (!quiet) {
         printf( "watching file %s with event mask %u\n", file, mask);
@@ -140,6 +147,7 @@ main (int argc, char **argv)
 
     /* start looping */
     for (;;) {
+
         /* get every event raised, and queue them */
         len = read(fd, buf, BUF_LEN);
 
@@ -149,15 +157,20 @@ main (int argc, char **argv)
 
         i = 0;
 
-
         /* treat all events queued */
         while (i < len) {
 
             /* get events one by one */
-            ev = (struct inotify_event *) &buf[i]; 
+            ev = (struct inotify_event *) &buf[i];
 
-            if (!quiet && ev->len > 0) {
-                printf("event on file %s: %u\n", ev->name, ev->mask);
+            if (ev->mask & IN_IGNORED) {
+                printf("watch removed, attemting to create another\n");
+                goto add_watch;
+            }
+
+            if (!quiet) {
+                printf("event on file %s: %u\n",
+                        ev->len ? ev->name : file, ev->mask);
             }
 
             /*
@@ -169,8 +182,7 @@ main (int argc, char **argv)
              * If you don't undersand this sentence, don't worry. Me neither.
              * Just trust the if().
              */
-            if (cmd && !(file && strncmp(file, ev->name, 255))) {
-
+            if (cmd) {
                 /* OMG a new event ! Quick, raise an alert ! */
                 if (!fork()) { execvpe(cmd[0], cmd, environ); }
             }
