@@ -54,3 +54,84 @@ Here are some examples:
 
     # Get up to date with community based projects
     wendy -D -M -C -d /mnt/nfs/project/ -t 30 -e notify-send 'project updated'
+
+
+FAQ
+===
+
+> Can it work on a folder and sub folders ?
+
+It does not. inotify does not handle this by default, and implementing this
+would make the code grow in complexity to a level I don't want to reach.
+But you could do something like:
+
+    $ tree
+    .
+    └── a
+    ├── b
+    │   ├── c
+    │   └── d
+    └── e
+
+    5 directories, 0 files
+
+    $ for d in `find a -type d`; do
+    >    wendy -C -q -f $d -e echo file created in $d &
+    > done
+
+That will spawn one instance of wendy per directory. You could
+then kill them all using job control or with
+
+    killall wendy
+
+---
+
+> Can you explain why this exists? Doesn't inotifywait (from inotify-tools) do
+> this exact same thing?
+
+I first started wendy, I was not aware of inotifywait. wendy was just a good
+programming exercise.
+
+With the time, I found wendy more and more useful, and added a few options to
+make it faster and more 'generic' (It was first created to watch my mail
+directory, to alert me of new mails).
+
+Today, I know that inotifywait can be used for everything wendy does Anyway, I
+still prefer using wendy because of this:
+
+    * inotifywait exits upon event reception [1]
+    * inotifywait does not allow to launch a command on event reception [2]
+    * inotifywait with multiple events can end in an infinite line [3]
+    * inotifywait only handle the file modification event (eg, wendy can use
+      the IN_ONLYDIR mask).
+    * inotifywait exits right when an event occur, wendy can treat all queued
+      events at a specific period
+    * inotify-tools : 164kb against 12kb for wendy (ok, not that relevant)
+    * I like the name 'wendy' better
+
+[1] I'm aware of the '--monitor' flag, but the only way to exec a command with
+    this is a pain that implies read, a while loop and so on.
+
+[2] In fact, you can, by doing "inotifywait -e <event> && command", and
+    wrapping it in a while loop. Well, don't forget to add a test to see if
+    your file still exists, to avoid infinite buggy loops. You'll end up with
+    something like:
+
+    while test -e ~/path/to/my/file; do
+        inotifywait -e <event> ~/path/to/my/file && command
+    done
+
+Good luck with this, I prefer "wendy -m <mask> -e command"
+
+[3] one flag per event. events written in words:
+
+    inotifywait -e access -e create -e delete -e modify -e attrib /path/to/file
+
+I prefer
+        wendy -m 774 ~/path/to/my/file
+
+---
+
+> Would you prefer to fight one horse sized duck, or 10 duck sized horses ?
+
+Regarding size and number, I'd rather fight horses. Ducks are silly creatures.
