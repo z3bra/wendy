@@ -79,8 +79,8 @@ But you could do something like:
     >    wendy -C -q -f $d -e echo file created in $d &
     > done
 
-That will spawn one instance of wendy per directory. You could
-then kill them all using job control or with
+That will spawn one instance of wendy per directory. You could then kill them
+all using job control or with
 
     killall wendy
 
@@ -89,7 +89,7 @@ then kill them all using job control or with
 > Can you explain why this exists? Doesn't inotifywait (from inotify-tools) do
 > this exact same thing?
 
-I first started wendy, I was not aware of inotifywait. wendy was just a good
+When I first started wendy, I was not aware of inotifywait. It was just a good
 programming exercise.
 
 With the time, I found wendy more and more useful, and added a few options to
@@ -110,12 +110,12 @@ still prefer using wendy because of this:
     * I like the name 'wendy' better
 
 [1] I'm aware of the '--monitor' flag, but the only way to exec a command with
-    this is a pain that implies read, a while loop and so on.
+this is a pain that implies read, a while loop and so on.
 
 [2] In fact, you can, by doing "inotifywait -e <event> && command", and
-    wrapping it in a while loop. Well, don't forget to add a test to see if
-    your file still exists, to avoid infinite buggy loops. You'll end up with
-    something like:
+wrapping it in a while loop. Well, don't forget to add a test to see if your
+file still exists, to avoid infinite buggy loops. You'll end up with something
+like:
 
     while test -e ~/path/to/my/file; do
         inotifywait -e <event> ~/path/to/my/file && command
@@ -128,6 +128,7 @@ Good luck with this, I prefer "wendy -m <mask> -e command"
     inotifywait -e access -e create -e delete -e modify -e attrib /path/to/file
 
 I prefer
+
         wendy -m 774 ~/path/to/my/file
 
 ---
