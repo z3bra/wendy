@@ -43,7 +43,7 @@ usage()
           "\t-l           : list events mask values\n"
           "\t-f file      : file to watch (everything is a file)\n"
           "\t-t timeout   : time between event check (in seconds)\n"
-          "\t-q           : don't talk to me, program\n"
+          "\t-v           : talk to me, program\n"
           "\t-e command   : command to launch (must be the last argument!)\n",
          stdout);
     exit(1);
@@ -99,7 +99,7 @@ execvpe(const char *program, char **argv, char **envp)
 int
 main (int argc, char **argv)
 {
-    int  fd, wd, len, i = 0, timeout = 0, ignore = 0, quiet = 0;
+    int  fd, wd, len, i = 0, timeout = 0, ignore = 0, verbose = 0;
     uint32_t mask = 0;
     char buf[BUF_LEN];
     char *file = NULL, **cmd = NULL;
@@ -115,7 +115,7 @@ main (int argc, char **argv)
             case 'M': mask |= IN_MODIFY; break;
             case 'm': mask |= atoi(argv[++i]); break;
             case 'l': list_events(); break;
-            case 'q': quiet = 1; break;
+            case 'v': verbose += 1; break;
             case 'f': file = argv[++i]; break;
             case 't': timeout = atoi(argv[++i]); break;
             case 'e': cmd = &argv[++i]; ignore=1; break;
@@ -141,7 +141,7 @@ add_watch:
         exit(1);
     }
 
-    if (!quiet) {
+    if (verbose) {
         printf( "watching file %s with event mask %u\n", file, mask);
     }
 
@@ -168,13 +168,12 @@ add_watch:
                 goto add_watch;
             }
 
-            if (!quiet) {
-                printf("event on file %s: %u\n",
-                        ev->len ? ev->name : file, ev->mask);
+            if (verbose) {
+                printf("%u: %s\n", ev->mask, ev->len ? ev->name : file);
             }
 
             /*
-             * do not do anything if no command given.
+             * Do not do anything if no command given.
              * Also only execute the command if the file concerned by the event
              * is the one we're watching, or if we're not looking for a specific
              * file.
