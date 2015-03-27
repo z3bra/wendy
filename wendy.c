@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <linux/limits.h>
 #include <string.h>
 #include <sys/inotify.h>
 
@@ -29,27 +30,36 @@
 #define DEFAULT_FILE    "." /* defaults to current directory */
 #define DEFAULT_CHECK   1   /* defaults to 1 second */
 
+struct node_t {
+    int wd;
+    char path[PATH_MAX];
+    struct node_t *next;
+};
+
 extern char **environ;
 
-void
+int verbose = 0, nb = 0;
+struct node_t *head = NULL;
+
+    void
 usage()
 {
     fputs("usage: wendy [-C] [-D] [-M] [-m mask] [-l] [-f file] [-t timeout] [-q] "
-          "[-e command [args] ..]\n"
-          "\t-C           : raise creation events (default)\n"
-          "\t-D           : raise deletion events\n"
-          "\t-M           : raise modification events\n"
-          "\t-m mask      : set mask manually (see -l))\n"
-          "\t-l           : list events mask values\n"
-          "\t-f file      : file to watch (everything is a file)\n"
-          "\t-t timeout   : time between event check (in seconds)\n"
-          "\t-v           : talk to me, program\n"
-          "\t-e command   : command to launch (must be the last argument!)\n",
-         stdout);
+            "[-e command [args] ..]\n"
+            "\t-C           : raise creation events (default)\n"
+            "\t-D           : raise deletion events\n"
+            "\t-M           : raise modification events\n"
+            "\t-m mask      : set mask manually (see -l))\n"
+            "\t-l           : list events mask values\n"
+            "\t-f file      : file to watch (everything is a file)\n"
+            "\t-t timeout   : time between event check (in seconds)\n"
+            "\t-v           : talk to me, program\n"
+            "\t-e command   : command to launch (must be the last argument!)\n",
+            stdout);
     exit(1);
 }
 
-void
+    void
 list_events()
 {
     fprintf(stdout,
@@ -81,11 +91,11 @@ list_events()
             IN_MOVE_SELF,
             IN_ALL_EVENTS,
             IN_UNMOUNT
-           );
+                );
     exit(0);
 }
 
-int
+    int
 execvpe(const char *program, char **argv, char **envp)
 {
     char **saved = environ;
@@ -96,16 +106,71 @@ execvpe(const char *program, char **argv, char **envp)
     return rc;
 }
 
-int
+    struct node_t *
+add_node(int wd, const char *path)
+{
+    struct node_t *n = NULL;
+
+    n = malloc(sizeof(struct node_t));
+
+    if (!n)
+        return NULL;
+
+    n->wd = wd;
+    strncpy(n->path, path, PATH_MAX);
+
+    n->next = head ? head : NULL;
+    head = n;
+
+    return n;
+}
+
+    const char *
+wd_name(int wd)
+{
+    struct node_t *n = head;
+
+    while (n && n->wd != wd)
+        n = n->next;
+
+    return n ? n->path : "unknown";
+}
+
+    int
+watch_node(int fd, const char *path, uint32_t mask)
+{
+    int wd = -1;
+
+    /* add a watcher on the file */
+    wd  = inotify_add_watch(fd, path, mask);
+
+    if (wd < 0) {
+        perror("inotify_add_watch");
+        exit(1);
+    }
+
+    add_node(wd, path);
+    nb++;
+
+    return wd;
+}
+
+    int
 main (int argc, char **argv)
 {
-    int  fd, wd, len, i = 0, timeout = 0, ignore = 0, verbose = 0;
+    int  fd, len, i = 0, timeout = 0, ignore = 0;
     uint32_t mask = 0;
     char buf[BUF_LEN];
-    char *file = NULL, **cmd = NULL;
+    char **cmd = NULL;
     struct inotify_event *ev;
 
     if ((argc == 2 && argv[1][0] == '-' && argv[1][1] == 'h')) usage();
+
+    /* get file descriptor */
+    fd = inotify_init();
+    if (fd < 0)
+        perror("inotify_init");
+
 
     /* parse option given. see usage() above */
     for(i = 1; (i < argc) && (argv[i][0] == '-') && !ignore; i++) {
@@ -113,10 +178,10 @@ main (int argc, char **argv)
             case 'C': mask |= IN_CREATE; break;
             case 'D': mask |= IN_DELETE; break;
             case 'M': mask |= IN_MODIFY; break;
-            case 'm': mask |= atoi(argv[++i]); break;
+            case 'm': mask = atoi(argv[++i]); break;
             case 'l': list_events(); break;
             case 'v': verbose += 1; break;
-            case 'f': file = argv[++i]; break;
+            case 'f': watch_node(fd, argv[++i], mask); break;
             case 't': timeout = atoi(argv[++i]); break;
             case 'e': cmd = &argv[++i]; ignore=1; break;
             default: usage();
@@ -124,29 +189,10 @@ main (int argc, char **argv)
     }
 
     /* test given arguments */
-    if (!file)      { file = DEFAULT_FILE; }
     if (!timeout)   { timeout = DEFAULT_CHECK; }
 
-    /* get file descriptor */
-    fd = inotify_init();
-    if (fd < 0)
-        perror("inotify_init");
-
-add_watch:
-    /* add a watcher on the file */
-    wd  = inotify_add_watch(fd, file, mask);
-
-    if (wd < 0) {
-        perror("inotify_add_watch");
-        exit(1);
-    }
-
-    if (verbose) {
-        printf( "watching file %s with event mask %u\n", file, mask);
-    }
-
     /* start looping */
-    for (;;) {
+    while (nb>0) {
 
         /* get every event raised, and queue them */
         len = read(fd, buf, BUF_LEN);
@@ -163,13 +209,13 @@ add_watch:
             /* get events one by one */
             ev = (struct inotify_event *) &buf[i];
 
-            if (ev->mask & IN_IGNORED) {
-                printf("watch removed, attemting to create another\n");
-                goto add_watch;
-            }
-
             if (verbose) {
-                printf("%u: %s\n", ev->mask, ev->len ? ev->name : file);
+                if (ev->mask & IN_IGNORED) {
+                    printf("! %s\n", ev->len? ev->name: wd_name(ev->wd));
+                    nb--;
+                }
+
+                printf("%-3u %s\n", ev->mask, ev->len? ev->name: wd_name(ev->wd));
             }
 
             /*
