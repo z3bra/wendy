@@ -211,11 +211,11 @@ main (int argc, char **argv)
 
             if (verbose) {
                 if (ev->mask & IN_IGNORED) {
-                    printf("! %s\n", ev->len? ev->name: wd_name(ev->wd));
+                    printf("!\t%s\n", ev->len? ev->name: wd_name(ev->wd));
                     nb--;
                 }
 
-                printf("%-3u %s\n", ev->mask, ev->len? ev->name: wd_name(ev->wd));
+                printf("%-3u\t%s\n", ev->mask, ev->len? ev->name: wd_name(ev->wd));
             }
 
             /*
