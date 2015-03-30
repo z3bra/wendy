@@ -95,6 +95,28 @@ list_events()
     exit(0);
 }
 
+    char *
+read_filename(int fd)
+{
+    int i;
+    char *fn = NULL, ch;
+
+    fn = malloc(PATH_MAX);
+    if (!fn)
+        return NULL;
+
+    for (i=0; read(fd, &ch, 1) > 0 && i < PATH_MAX; i++) {
+        if (ch == 0 || ch == '\n') {
+            *(fn + i + 1) = 0;
+            return fn;
+        } else {
+            *(fn+i) = ch;
+        }
+    }
+
+    return NULL;
+}
+
     int
 execvpe(const char *program, char **argv, char **envp)
 {
@@ -141,9 +163,11 @@ watch_node(int fd, const char *path, uint32_t mask)
 {
     int wd = -1;
 
+    if (!path)
+        return -1;
+
     /* add a watcher on the file */
     wd  = inotify_add_watch(fd, path, mask);
-
     if (wd < 0) {
         perror("inotify_add_watch");
         exit(1);
@@ -161,6 +185,7 @@ main (int argc, char **argv)
     int  fd, len, i = 0, timeout = 0, ignore = 0;
     uint32_t mask = 0;
     char buf[BUF_LEN];
+    char *fn = NULL;
     char **cmd = NULL;
     struct inotify_event *ev;
 
@@ -191,12 +216,17 @@ main (int argc, char **argv)
     /* test given arguments */
     if (!timeout)   { timeout = DEFAULT_CHECK; }
 
+    if (!nb) {
+        while ((fn = read_filename(0)) != NULL)
+            watch_node(fd, fn, mask);
+
+        free(fn);
+    }
+
     /* start looping */
     while (nb>0) {
-
         /* get every event raised, and queue them */
         len = read(fd, buf, BUF_LEN);
-
         if (!len || len < 0) {
             perror("read");
         }
