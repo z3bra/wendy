@@ -6,10 +6,10 @@
 
 (W)atch (ENT)ire (D)irector(Y) is an inotify-based directory watcher.
 
-With wendy, you can watch event in a directory or on a file, and launch a
+With wendy, you can watch event in directories or files, and launch a
 specific command when an event occurs.
 
-The program is made the moire simple possible, to leave the room to unlimited
+The program is made the more simple possible, to leave the room to unlimited
 uses. Be creative !
 
 Every event raised by inotify is handled. Just sum them up to watch multiple
@@ -36,25 +36,29 @@ To watch for both creation AND deletion in a directory, do some math:
 then, pass that value to wendy so that she can watch after both of them (did I
 just say 'she'?).
 
-For more convenience, the IN_CREATE, IN_DELETE and IN_MODIFY events are bound to
-(respectively) -C, -D and -M.
+You can also note that you can specify file/directory names either using the
+-f flag, or from stdin (in this case, the -f flag must be omited).
+As a hidden feature, the watch mask is changed everytime the -m flag is
+provided, and the inotify watches are set everytime the -f flag is given. So
+you can wathc different mask on different file using the same command, and
+that's pretty cool!
 
 Here are some examples:
 
     # Tell me whenever I have a new mail
-    wendy -C -d ~/mails/INBOX/new -t 60 -e espeak "You got a new mail"
+    wendy -m 256 -d ~/mails/INBOX/new -t 60 -e espeak "You got a new mail"
 
     # On-the-fly recompilation
-    wendy -M -q -d ~/src/dev/program/ -f source.c -t 1 -e make
-    # or eventually
     wendy -l | grep -i close_write
     IN_CLOSE_WRITE ... 8
-    wendy -m 8 -q -d ~/src/dev/program/ -f source.c -t 1 -e make
+    find -name "*.c" | wendy -m 8 -q -d ~/src/dev/program/ -t 1 -e make
 
 
     # Get up to date with community based projects
-    wendy -D -M -C -d /mnt/nfs/project/ -t 30 -e notify-send 'project updated'
+    wendy -m 770 -f /mnt/nfs/project/ -t 30 -e popup 'project updated'
 
+    # watch creation in the directory, and modifications on a file
+    wendy -m 256 -f ./my_dir -m 8 -f file.txt -e echo awesome!
 
 FAQ
 ===
@@ -67,7 +71,7 @@ But you could do something like:
 
     $ tree
     .
-    └── a
+    ├── a
     ├── b
     │   ├── c
     │   └── d
@@ -75,14 +79,10 @@ But you could do something like:
 
     5 directories, 0 files
 
-    $ for d in `find a -type d`; do
-    >    wendy -C -q -f $d -e echo file created in $d &
-    > done
+    $ find a -type d | wendy -m 256 -v | cut -f2
 
-That will spawn one instance of wendy per directory. You could then kill them
-all using job control or with
-
-    killall wendy
+That will add a watch to each directory, and output the names of the file
+created (eg: "a/b/newfile").
 
 ---
 
@@ -102,8 +102,9 @@ still prefer using wendy because of this:
     * inotifywait exits upon event reception [1]
     * inotifywait does not allow to launch a command on event reception [2]
     * inotifywait with multiple events can end in an infinite line [3]
+    * inotifywait cna't read names from stdin
     * inotifywait only handle the file modification event (eg, wendy can use
-      the IN_ONLYDIR mask).
+      the IN_ONLYDIR mask)
     * inotifywait exits right when an event occur, wendy can treat all queued
       events at a specific period
     * inotify-tools : 164kb against 12kb for wendy (ok, not that relevant)
@@ -129,7 +130,7 @@ Good luck with this, I prefer "wendy -m <mask> -e command"
 
 I prefer
 
-        wendy -m 774 ~/path/to/my/file
+        wendy -m 774 -f ~/path/to/my/file
 
 ---
 
