@@ -232,13 +232,13 @@ main (int argc, char **argv)
 
 			if (verbose) {
 				if (ev->mask & IN_IGNORED) {
-					printf("!\t%s\n", ev->len? ev->name:
-							wd_name(ev->wd));
+					printf("!!\t%s/%s\n", wd_name(ev->wd), 
+							ev->len? ev->name: "");
 					nb--;
 				}
 
-				printf("%u\t%s\n", ev->mask, ev->len?
-						ev->name: wd_name(ev->wd));
+				printf("%u\t%s/%s\n", ev->mask, wd_name(ev->wd), 
+						ev->len? ev->name: "");
 				fflush(stdout);
 			}
 
