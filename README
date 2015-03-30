@@ -4,7 +4,7 @@
                 -- by z3bra
 ===========================
 
-(W)atch (ENT)ire (D)irector(Y) is an inotify-based directory watcher.
+(W)atch (EN)tire (D)irector(Y) is an inotify-based directory watcher.
 
 With wendy, you can watch event in directories or files, and launch a
 specific command when an event occurs.
