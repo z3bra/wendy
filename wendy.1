@@ -1,0 +1,151 @@
+./" wendy manual page - section 1 (general commands)
+.TH WENDY 1 2015-03-31 Linux
+.SH NAME
+.B  wendy
+\- directory and file watcher based on inotify
+.SH SYNOPSIS
+.B wendy
+.BI \-m\  mask
+.RB [ \-lv ]\ [ \-f
+.IR file ]
+.RB [ \-t
+.IR timeout ]
+.RB [ \-v ]
+.BI [ \-e\  command\  [arg, ..]]
+.SH DESCRIPTION
+.B wendy
+watches for events in a directory or its files and executes a command when an
+inotify event is triggered.
+.SH OPTIONS
+.TP
+.B \-l
+Outputs a list of masks
+.B wendy
+can watch for and their mask values.
+.TP
+.B \-v
+Verbose.
+.B wendy
+will output the mask of the event caught, followed by a tab, and then the name
+of the file or directory that the event was caught in.
+.TP
+.BI \-f\  file
+Specifies the file or directory to watch events in. You can specify multiple files by providing multiple
+.B -f
+flags. If no file is specified, then
+.B wendy
+will read filenames from stdin.
+.TP
+.BI \-t\  timeout
+Sets the delay
+.B wendy
+will check the file or directory for events.
+.I timeout
+is in seconds.
+.TP
+.BI \-m\  mask
+Sets the mask of events to watch for. Refer to the
+.B MASKS
+section of this manual page for more details. you can specify multiple masks by
+providing multiple
+.B -m
+flags. Flags are processed from left to right, so you can watch different masks
+on different nodes in a single command (Refer to the
+.B EXAMPLE
+section for examples on how to use this flag)
+.TP
+.BI \-e\  command
+Execute
+.I command
+when the events have been caught.
+.B NOTE: This must be the last argument to any call to wendy!
+.SH MASKS
+A mask is a number that
+.B wendy
+uses to find out what events it should check for. When using
+.BI \-m\  mask\fR,
+.I mask
+will either be a number or a sum of numbers from the table below:
+.TS
+l l
+---
+l l.
+MASK	VALUE
+IN_ACCESS	1
+IN_MODIFY	2
+IN_ATTRIB	4
+IN_CLOSE_WRITE	8
+IN_CLOSE_NOWRITE	16
+IN_OPEN	32
+IN_MOVED_FROM	64
+IN_MOVED_TO	128
+IN_CREATE	256
+IN_DELETE	512
+IN_DELETE_SELF	1024
+IN_MOVE_SELF	2048
+IN_ALL_EVENTS	4095
+IN_UNMOUNT	8192
+.TE
+
+.SH EXAMPLES
+
+.SS Watching single events
+This command will watch
+.B IN_CREATE
+events in the given directory, and play a sounds whenever a file is created in
+this directory. This can be useful to get notified of new incoming emails
+(fetched locally)
+.nf
+wendy -m 256 -f ~/mail/INBOX/new -e play /usr/share/sound/bell.wav
+.fi
+
+.SS Watching for multiple events
+To watch multiple events, you just need to sum them up before giving the mask to
+.B wendy
+\. For example, here is how you'd watch both
+.B IN_MOVED_FROM (64)
+and
+.B IN_MOVED_TO (128)
+events on a directory: 128 + 64 = 192
+.nf
+wendy -m 192 -f ~/var/directory -v
+.fi
+
+.SS Watching multiple files
+.B wendy
+gives you two different ways to watch multiple files. Either by providing
+multiple
+.B \-f
+flags, or by feeding it from stdin. Let's say you have the following structure:
+.nf
+    .
+    |-- Makefile
+    |-- library.c
+    |-- library.h
+    `-- program.c
+.fi
+If you want to automatically run
+.B make
+whenever a C source file is modified, you can use the following commands
+.nf
+wendy -m 8 -f library.c -f program.c -e make
+.fi
+OR
+.nf
+find -name '*.c' | wendy -m 8 -e make
+.fi
+
+.SS Using different masks on different files
+The order of the flags provided matters. So if you want to watch mutliple
+events, you can simply tidy the arguments to do what you want.
+This example will raise both
+.B IN_CREATE
+events in the given directory, and
+.B IN_ACCESS 
+events on existing files
+.nf
+wendy -v -m 256 -f /var/log -m 1 -f /var/log/message -f /var/log/auth
+.fi
+
+.SH SEE ALSO
+.BR inotify (7)
