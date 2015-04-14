@@ -1,0 +1,108 @@
+./" wendy manual page - section 1 (general commands)
+.TH WENDY 1 2015-03-31 Linux
+.SH NAME
+.B  wendy
+\- directory and file watcher based on inotify
+.SH SYNOPSIS
+.B wendy
+.RB [ \-l ]\ [ \-f
+.IR file ]
+.RB [ \-t
+.IR timeout ]
+.RB [ \-v ]
+.BI \-m\  mask
+.BI \-e\  command
+.SH DESCRIPTION
+.B wendy
+watches for events in a directory or its files and executes a command when an
+inotify event is triggered.
+.SH OPTIONS
+.TP
+.B \-l
+Outputs a list of masks
+.B wendy
+can watch for and their mask values.
+.TP
+.BI \-f\  file
+Specifies the file or directory to watch events in.
+.BI \-t\  timeout
+Sets the delay
+.B wendy
+will check the file or directory for events.
+.I timeout
+is in seconds.
+.TP
+.B \-v
+Verbose.
+.B wendy
+will output the mask of the event caught, followed by a tab, and then the name
+of the file or directory that the event was caught in.
+.TP
+.BI \-m\  mask
+Sets the mask of events to watch for. Refer to the
+.B MASKS
+section of this manual page for more details.
+.TP
+.BI \-e\  command
+Execute
+.I command
+when the events have been caught.
+.B NOTE: This must be the last argument to any call to wendy!
+.SH MASKS
+A mask is a number that
+.B wendy
+uses to find out what events it should check for. When using
+.BI \-m\  mask\fR,
+.I mask
+will either be a number or a sum of numbers from the table below:
+.TS
+l l
+---
+l l.
+MASK	VALUE
+IN_ACCESS	1
+IN_MODIFY	2
+IN_ATTRIB	4
+IN_CLOSE_WRITE	8
+IN_CLOSE_NOWRITE	16
+IN_OPEN	32
+IN_MOVED_FROM	64
+IN_MOVED_TO	128
+IN_CREATE	256
+IN_DELETE	512
+IN_DELETE_SELF	1024
+IN_MOVE_SELF	2048
+IN_ALL_EVENTS	4095
+IN_UNMOUNT	8192
+.TE
+.SS Watching for single events
+For example, a program writes to a log file
+.I progam.log
+in the home directory when an error
+occurs. There is not a log file there currently. Since the event to look for is
+a created file, the mask will be 256 for IN_CREATE.
+.nf
+
+wendy -m 256 -f ~ -e echo "The program has failed. Read the log."
+
+.fi
+
+.B wendy
+will look for any file created in the home directory and echo a reminder to read
+the log there.
+.SS Watching for multiple events
+As another example, a temporary directory is going to be watched for the
+movement of files in and out of there. The mask to use here will be an addition
+of the masks of the events to look out for: 64 (IN_MOVED_FROM) and 128
+(IN_MOVED_TO). This adds up to 192.
+.nf
+
+wendy -m 192 -f ~/tmp -e echo "Files moved to or from ~/tmp."
+
+.fi
+
+.B wendy
+will check in the temporary directory for if a file has been moved in or out of
+there and echo a reminder. As usual, the command to run can be anything.
+.SH SEE ALSO
+.BR inotify (7)
