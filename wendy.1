@@ -5,13 +5,13 @@
 \- directory and file watcher based on inotify
 .SH SYNOPSIS
 .B wendy
-.RB [ \-l ]\ [ \-f
+.BI \-m\  mask
+.RB [ \-lv ]\ [ \-f
 .IR file ]
 .RB [ \-t
 .IR timeout ]
 .RB [ \-v ]
-.BI \-m\  mask
-.BI \-e\  command
+.BI [ \-e\  command\  [arg, ..]]
 .SH DESCRIPTION
 .B wendy
 watches for events in a directory or its files and executes a command when an
@@ -23,8 +23,19 @@ Outputs a list of masks
 .B wendy
 can watch for and their mask values.
 .TP
+.B \-v
+Verbose.
+.B wendy
+will output the mask of the event caught, followed by a tab, and then the name
+of the file or directory that the event was caught in.
+.TP
 .BI \-f\  file
-Specifies the file or directory to watch events in.
+Specifies the file or directory to watch events in. You can specify multiple files by providing multiple
+.B -f
+flags. If no file is specified, then
+.B wendy
+will read filenames from stdin.
+.TP
 .BI \-t\  timeout
 Sets the delay
 .B wendy
@@ -32,16 +43,16 @@ will check the file or directory for events.
 .I timeout
 is in seconds.
 .TP
-.B \-v
-Verbose.
-.B wendy
-will output the mask of the event caught, followed by a tab, and then the name
-of the file or directory that the event was caught in.
-.TP
 .BI \-m\  mask
 Sets the mask of events to watch for. Refer to the
 .B MASKS
-section of this manual page for more details.
+section of this manual page for more details. you can specify multiple masks by
+providing multiple
+.B -m
+flags. Flags are processed from left to right, so you can watch different masks
+on different nodes in a single command (Refer to the
+.B EXAMPLE
+section for examples on how to use this flag)
 .TP
 .BI \-e\  command
 Execute
@@ -75,34 +86,66 @@ IN_MOVE_SELF	2048
 IN_ALL_EVENTS	4095
 IN_UNMOUNT	8192
 .TE
-.SS Watching for single events
-For example, a program writes to a log file
-.I progam.log
-in the home directory when an error
-occurs. There is not a log file there currently. Since the event to look for is
-a created file, the mask will be 256 for IN_CREATE.
+
+.SH EXAMPLES
+
+.SS Watching single events
+This command will watch
+.B IN_CREATE
+events in the given directory, and play a sounds whenever a file is created in
+this directory. This can be useful to get notified of new incoming emails
+(fetched locally)
 .nf
-
-wendy -m 256 -f ~ -e echo "The program has failed. Read the log."
-
+wendy -m 256 -f ~/mail/INBOX/new -e play /usr/share/sound/bell.wav
 .fi
 
-.B wendy
-will look for any file created in the home directory and echo a reminder to read
-the log there.
 .SS Watching for multiple events
-As another example, a temporary directory is going to be watched for the
-movement of files in and out of there. The mask to use here will be an addition
-of the masks of the events to look out for: 64 (IN_MOVED_FROM) and 128
-(IN_MOVED_TO). This adds up to 192.
+To watch multiple events, you just need to sum them up before giving the mask to
+.B wendy
+\. For example, here is how you'd watch both
+.B IN_MOVED_FROM (64)
+and
+.B IN_MOVED_TO (128)
+events on a directory: 128 + 64 = 192
 .nf
-
-wendy -m 192 -f ~/tmp -e echo "Files moved to or from ~/tmp."
-
+wendy -m 192 -f ~/var/directory -v
 .fi
 
+.SS Watching multiple files
 .B wendy
-will check in the temporary directory for if a file has been moved in or out of
-there and echo a reminder. As usual, the command to run can be anything.
+gives you two different ways to watch multiple files. Either by providing
+multiple
+.B \-f
+flags, or by feeding it from stdin. Let's say you have the following structure:
+.nf
+    .
+    |-- Makefile
+    |-- library.c
+    |-- library.h
+    `-- program.c
+.fi
+If you want to automatically run
+.B make
+whenever a C source file is modified, you can use the following commands
+.nf
+wendy -m 8 -f library.c -f program.c -e make
+.fi
+OR
+.nf
+find -name '*.c' | wendy -m 8 -e make
+.fi
+
+.SS Using different masks on different files
+The order of the flags provided matters. So if you want to watch mutliple
+events, you can simply tidy the arguments to do what you want.
+This example will raise both
+.B IN_CREATE
+events in the given directory, and
+.B IN_ACCESS 
+events on existing files
+.nf
+wendy -v -m 256 -f /var/log -m 1 -f /var/log/message -f /var/log/auth
+.fi
+
 .SH SEE ALSO
 .BR inotify (7)
