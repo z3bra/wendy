@@ -21,6 +21,8 @@ path:
 
 install :
 	install -D -m0755 wendy ${DESTDIR}${PREFIX}/bin/wendy
+	install -D -m0644 wendy.1 ${DESTDIR}${MANPREFIX}/man1/wendy.1
 
 uninstall:
 	${RM} ${DESTDIR}${PREFIX}/bin/wendy
+	${RM} ${DESTDIR}${MANPREFIX}/man1/wendy.1
