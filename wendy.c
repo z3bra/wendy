@@ -21,6 +21,7 @@
 #include <linux/limits.h>
 #include <string.h>
 #include <sys/inotify.h>
+#include <sys/wait.h>
 
 /* definitions, defaults, bla bla blah */
 #define EVENT_SIZE      (sizeof(struct inotify_event))
@@ -252,8 +253,14 @@ main (int argc, char **argv)
 			 * Me neither.  Just trust the if().
 			 */
 			if (cmd) {
-				/* OMG a new event ! Quick, raise an alert ! */
-				if (!fork()) { execvpe(cmd[0], cmd, environ); }
+				/*
+				 * OMG a new event! raise an alert!
+				 * Also, double-forking.
+				 */
+				if (!fork())
+				if (!fork()) execvpe(cmd[0], cmd, environ);
+				else exit(0);
+				else wait(NULL);
 			}
 
 			/* jump to the next one */
