@@ -130,22 +130,6 @@ add_node(int wd, const char *path)
 	return n;
 }
 
-int
-del_node(int wd)
-{
-	struct node_t *n, *p;
-	p = n = head;
-	while (n && n->wd != wd) {
-		p = n;
-		n = n->next;
-	}
-
-	p->next = n->next;
-	free(n);
-	nb--;
-	return 0;
-}
-
 const char *
 wd_path(int wd)
 {
@@ -250,12 +234,10 @@ main (int argc, char **argv)
 			 * when there is no more files to watch.
 			 */
 			if (ev->mask & IN_IGNORED) {
-				del_node(ev->wd);
+				nb--;
 				if (watch_node(fd, EVENT_PATH(ev), mask) < 0 && verbose)
 					fprintf(stderr, "%s: watch removed\n", EVENT_PATH(ev));
-			}
-
-			if (verbose) {
+			} else if (verbose) {
 				printf("%u\t%s\n", ev->mask, EVENT_PATH(ev));
 				fflush(stdout);
 			}
