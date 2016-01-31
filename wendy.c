@@ -23,6 +23,8 @@
 #include <sys/inotify.h>
 #include <sys/wait.h>
 
+#include "arg.h"
+
 /* definitions, defaults, bla bla blah */
 #define EVENT_SIZE      (sizeof(struct inotify_event))
 /* maximum number of event * queuing at the same time */
@@ -42,17 +44,10 @@ int verbose = 0, nb = 0;
 struct node_t *head = NULL;
 
 	void
-usage()
+usage(char *name)
 {
-	fputs("usage: wendy [-m mask] [-l] [-f file] [-t timeout] [-q] "
-			"[-e command [args] ..]\n"
-			"\t-m mask      : set mask manually (see -l))\n"
-			"\t-l           : list events mask values\n"
-			"\t-f file      : file to watch (everything is a file)\n"
-			"\t-t timeout   : time between event check (in seconds)\n"
-			"\t-v           : talk to me, program\n"
-			"\t-e command   : command to launch (must be the last arg!)\n",
-			stdout);
+	fprintf(stderr, "usage: %s [-lq] [-m mask] [-f file] [-t timeout] "
+	                "[cmd [args..]]\n", name);
 	exit(1);
 }
 
@@ -89,7 +84,6 @@ list_events()
 			IN_ALL_EVENTS,
 			IN_UNMOUNT
 				);
-	exit(0);
 }
 
 	char *
@@ -177,14 +171,12 @@ watch_node(int fd, const char *path, uint32_t mask)
 	int
 main (int argc, char **argv)
 {
-	int  fd, len, i = 0, timeout = 0, ignore = 0;
-	uint32_t mask = 0;
+	int  fd, len, i = 0, timeout = 0;
+	uint32_t mask = IN_CLOSE_WRITE;
 	char buf[BUF_LEN];
-	char *fn = NULL;
+	char *fn = NULL, *argv0 = NULL;
 	char **cmd = NULL;
 	struct inotify_event *ev;
-
-	if ((argc == 2 && argv[1][0] == '-' && argv[1][1] == 'h')) usage();
 
 	/* get file descriptor */
 	fd = inotify_init();
@@ -192,18 +184,29 @@ main (int argc, char **argv)
 		perror("inotify_init");
 
 
-	/* parse option given. see usage() above */
-	for(i = 1; (i < argc) && (argv[i][0] == '-') && !ignore; i++) {
-		switch (argv[i][1]) {
-			case 'm': mask = atoi(argv[++i]); break;
-			case 'l': list_events(); break;
-			case 'v': verbose += 1; break;
-			case 'f': watch_node(fd, argv[++i], mask); break;
-			case 't': timeout = atoi(argv[++i]); break;
-			case 'e': cmd = &argv[++i]; ignore=1; break;
-			default: usage();
-		}
-	}
+	ARGBEGIN{
+	case 'm':
+		mask = atoi(EARGF(usage(argv0)));
+		break;
+	case 'l':
+		list_events();
+		return 0;
+		break; /* NOT REACHED */
+	case 'v':
+		verbose++;
+		break;
+	case 'f':
+		watch_node(fd, EARGF(usage(argv0)), mask);
+		break;
+	case 't':
+		timeout = atoi(EARGF(usage(argv0)));
+		break;
+	default:
+		usage(argv0);
+	}ARGEND;
+
+	if (argc > 0)
+		cmd = argv;
 
 	/* test given arguments */
 	if (!timeout)   { timeout = DEFAULT_CHECK; }
