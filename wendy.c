@@ -10,10 +10,22 @@
 
 /* definitions, defaults, bla bla blah */
 #define EVENT_SIZE      (sizeof(struct inotify_event))
+
 /* maximum number of event * queuing at the same time */
 #define BUF_LEN         (512 * (EVENT_SIZE+16))
 
-#define DEFAULT_CHECK   1   /* defaults to 1 second */
+/* macro used to retrieve the path of the node triggering the event */
+#define EVENT_PATH(e)   (e->len ? e->name : wd_path(e->wd))
+
+/* environment variable names set by wendy to pass to the command */
+#define ENV_PATH        "WENDY_INODE"
+#define ENV_MASK        "WENDY_EVENT"
+
+/* default value for the mask when -m is not specified */
+#define DEFAULT_MASK    (IN_CLOSE_WRITE|IN_MODIFY)
+
+/* timeout value used by default to queue the events */
+#define DEFAULT_TIMEOUT 1
 
 struct node_t {
 	int wd;
@@ -120,7 +132,7 @@ add_node(int wd, const char *path)
 }
 
 	const char *
-wd_name(int wd)
+wd_path(int wd)
 {
 	struct node_t *n = head;
 
@@ -155,8 +167,8 @@ watch_node(int fd, const char *path, uint32_t mask)
 main (int argc, char **argv)
 {
 	int  fd, len, i = 0, timeout = 0;
-	uint32_t mask = IN_CLOSE_WRITE;
-	char buf[BUF_LEN];
+	uint32_t mask = DEFAULT_MASK;
+	char buf[BUF_LEN], strmask[8];
 	char *fn = NULL, *argv0 = NULL;
 	char **cmd = NULL;
 	struct inotify_event *ev;
@@ -192,7 +204,7 @@ main (int argc, char **argv)
 		cmd = argv;
 
 	/* test given arguments */
-	if (!timeout)   { timeout = DEFAULT_CHECK; }
+	if (!timeout)   { timeout = DEFAULT_TIMEOUT; }
 
 	if (!nb) {
 		while ((fn = read_filename(0)) != NULL)
@@ -218,14 +230,19 @@ main (int argc, char **argv)
 			ev = (struct inotify_event *) &buf[i];
 
 			if (verbose) {
+				/*
+				 * IN_IGNORED is triggered when a file watched
+				 * doesn't exists anymore. In this case we
+				 * decrement the number of files watched so
+				 * that if there is none remaining, wendy will
+				 * terminate.
+				 */
 				if (ev->mask & IN_IGNORED) {
-					printf("!!\t%s/%s\n", wd_name(ev->wd), 
-							ev->len? ev->name: "");
+					fprintf(stderr, "%s: removing watch\n", EVENT_PATH(ev));
 					nb--;
+				} else {
+					printf("%u\t%s\n", ev->mask, EVENT_PATH(ev));
 				}
-
-				printf("%u\t%s/%s\n", ev->mask, wd_name(ev->wd), 
-						ev->len? ev->name: "");
 				fflush(stdout);
 			}
 
@@ -241,8 +258,13 @@ main (int argc, char **argv)
 			if (cmd) {
 				/*
 				 * OMG a new event! raise an alert!
+				 * We first add two variables to the environment
+				 * and then run the command.
 				 * Also, double-forking.
 				 */
+				snprintf(strmask, 8, "%d", ev->mask);
+				setenv(ENV_MASK, strmask, 1);
+				setenv(ENV_PATH, EVENT_PATH(ev), 1);
 				if (!fork())
 				if (!fork()) execvpe(cmd[0], cmd, environ);
 				else exit(0);
@@ -253,7 +275,8 @@ main (int argc, char **argv)
 			i += EVENT_SIZE + ev->len;
 		}
 		/* wait before queuing events */
-		sleep(timeout);
+		if (nb > 0)
+			sleep(timeout);
 	}
 
 	return EXIT_SUCCESS;
