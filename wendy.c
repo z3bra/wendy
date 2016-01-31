@@ -126,7 +126,24 @@ add_node(int wd, const char *path)
 	n->next = head ? head : NULL;
 	head = n;
 
+	nb++;
 	return n;
+}
+
+int
+del_node(int wd)
+{
+	struct node_t *n, *p;
+	p = n = head;
+	while (n && n->wd != wd) {
+		p = n;
+		n = n->next;
+	}
+
+	p->next = n->next;
+	free(n);
+	nb--;
+	return 0;
 }
 
 const char *
@@ -152,12 +169,10 @@ watch_node(int fd, const char *path, uint32_t mask)
 	wd  = inotify_add_watch(fd, path, mask);
 	if (wd < 0) {
 		perror("inotify_add_watch");
-		exit(1);
+		return wd;
 	}
 
 	add_node(wd, path);
-	nb++;
-
 	return wd;
 }
 
@@ -226,20 +241,22 @@ main (int argc, char **argv)
 			/* get events one by one */
 			ev = (struct inotify_event *) &buf[i];
 
+			/*
+			 * IN_IGNORED is triggered when a file watched
+			 * doesn't exists anymore. In this case we
+			 * delete the node we were watching, and try to
+			 * watch the file again. If that fails, then the 'nb'
+			 * variable will be decremented, so that wendy can terminate
+			 * when there is no more files to watch.
+			 */
+			if (ev->mask & IN_IGNORED) {
+				del_node(ev->wd);
+				if (watch_node(fd, EVENT_PATH(ev), mask) < 0 && verbose)
+					fprintf(stderr, "%s: watch removed\n", EVENT_PATH(ev));
+			}
+
 			if (verbose) {
-				/*
-				 * IN_IGNORED is triggered when a file watched
-				 * doesn't exists anymore. In this case we
-				 * decrement the number of files watched so
-				 * that if there is none remaining, wendy will
-				 * terminate.
-				 */
-				if (ev->mask & IN_IGNORED) {
-					fprintf(stderr, "%s: removing watch\n", EVENT_PATH(ev));
-					nb--;
-				} else {
-					printf("%u\t%s\n", ev->mask, EVENT_PATH(ev));
-				}
+				printf("%u\t%s\n", ev->mask, EVENT_PATH(ev));
 				fflush(stdout);
 			}
 
