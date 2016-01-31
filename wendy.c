@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <linux/limits.h>
+#include <limits.h>
 #include <string.h>
 #include <sys/inotify.h>
 #include <sys/wait.h>
@@ -38,7 +38,7 @@ extern char **environ;
 int verbose = 0, nb = 0;
 struct node_t *head = NULL;
 
-	void
+void
 usage(char *name)
 {
 	fprintf(stderr, "usage: %s [-lq] [-m mask] [-f file] [-t timeout] "
@@ -46,11 +46,10 @@ usage(char *name)
 	exit(1);
 }
 
-	void
+void
 list_events()
 {
-	fprintf(stdout,
-			"IN_ACCESS ........ %u\n"
+	fprintf(stdout, "IN_ACCESS ........ %u\n"
 			"IN_MODIFY ........ %u\n"
 			"IN_ATTRIB ........ %u\n"
 			"IN_CLOSE_WRITE ... %u\n"
@@ -77,11 +76,10 @@ list_events()
 			IN_DELETE_SELF,
 			IN_MOVE_SELF,
 			IN_ALL_EVENTS,
-			IN_UNMOUNT
-				);
+			IN_UNMOUNT);
 }
 
-	char *
+char *
 read_filename(int fd)
 {
 	int i;
@@ -103,7 +101,7 @@ read_filename(int fd)
 	return NULL;
 }
 
-	int
+int
 execvpe(const char *program, char **argv, char **envp)
 {
 	char **saved = environ;
@@ -114,7 +112,7 @@ execvpe(const char *program, char **argv, char **envp)
 	return rc;
 }
 
-	struct node_t *
+struct node_t *
 add_node(int wd, const char *path)
 {
 	struct node_t *n = NULL;
@@ -131,7 +129,7 @@ add_node(int wd, const char *path)
 	return n;
 }
 
-	const char *
+const char *
 wd_path(int wd)
 {
 	struct node_t *n = head;
@@ -142,7 +140,7 @@ wd_path(int wd)
 	return n ? n->path : "unknown";
 }
 
-	int
+int
 watch_node(int fd, const char *path, uint32_t mask)
 {
 	int wd = -1;
@@ -163,7 +161,7 @@ watch_node(int fd, const char *path, uint32_t mask)
 	return wd;
 }
 
-	int
+int
 main (int argc, char **argv)
 {
 	int  fd, len, i = 0, timeout = 0;
@@ -217,9 +215,8 @@ main (int argc, char **argv)
 	while (nb>0) {
 		/* get every event raised, and queue them */
 		len = read(fd, buf, BUF_LEN);
-		if (!len || len < 0) {
+		if (!len || len < 0)
 			perror("read");
-		}
 
 		i = 0;
 
