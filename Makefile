@@ -1,28 +1,22 @@
 include config.mk
 
-.SUFFIXES : .c .o
-.PHONY : all list clean install uninstall
+.PHONY: clean install uninstall
+
+wendy: wendy.o
 
 .c.o:
-	@echo -e "CC $<"
-	@${CC} -c $< -o $@ ${CFLAGS}
+	$(CC) -c $(CFLAGS) $< -o $@
 
-wendy : wendy.o
-	@echo -e "LD wendy"
-	@${CC} $^ -o $@ ${LDFLAGS}
-
-all : wendy
+.o:
+	$(LD) $(LDFLAGS) $< -o $@
 
 clean :
-	${RM} -f wendy *.o *~
-
-path:
-	@echo PREFIX: ${PREFIX}
+	rm -f wendy *.o
 
 install :
 	install -D -m0755 wendy ${DESTDIR}${PREFIX}/bin/wendy
 	install -D -m0644 wendy.1 ${DESTDIR}${MANPREFIX}/man1/wendy.1
 
 uninstall:
-	${RM} ${DESTDIR}${PREFIX}/bin/wendy
-	${RM} ${DESTDIR}${MANPREFIX}/man1/wendy.1
+	rm -f ${DESTDIR}${PREFIX}/bin/wendy
+	rm -f ${DESTDIR}${MANPREFIX}/man1/wendy.1
