@@ -4,4 +4,4 @@ CFLAGS  = -Wall -Wextra -pedantic
 LDFLAGS = 
 
 PREFIX = /usr/local
-MANPREFIX = ${PREFIX}/man
+MANDIR = ${PREFIX}/man

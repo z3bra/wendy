@@ -15,8 +15,8 @@ clean :
 
 install :
 	install -D -m0755 wendy ${DESTDIR}${PREFIX}/bin/wendy
-	install -D -m0644 wendy.1 ${DESTDIR}${MANPREFIX}/man1/wendy.1
+	install -D -m0644 wendy.1 ${DESTDIR}${MANDIR}/man1/wendy.1
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/wendy
-	rm -f ${DESTDIR}${MANPREFIX}/man1/wendy.1
+	rm -f ${DESTDIR}${MANDIR}/man1/wendy.1
