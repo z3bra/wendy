@@ -33,8 +33,6 @@ struct node_t {
 	struct node_t *next;
 };
 
-extern char **environ;
-
 int verbose = 0, nb = 0;
 struct node_t *head = NULL;
 
@@ -99,17 +97,6 @@ read_filename(int fd)
 	}
 
 	return NULL;
-}
-
-int
-execvpe(const char *program, char **argv, char **envp)
-{
-	char **saved = environ;
-	int rc;
-	environ = envp;
-	rc = execvp(program, argv);
-	environ = saved;
-	return rc;
 }
 
 struct node_t *
@@ -262,7 +249,7 @@ main (int argc, char **argv)
 				setenv(ENV_MASK, strmask, 1);
 				setenv(ENV_PATH, EVENT_PATH(ev), 1);
 				if (!fork())
-				if (!fork()) execvpe(cmd[0], cmd, environ);
+				if (!fork()) execvp(cmd[0], cmd);
 				else exit(0);
 				else wait(NULL);
 			}
