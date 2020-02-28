@@ -67,8 +67,11 @@ watch(int fd, char *pathname, int mask)
 	if (!w)
 		return NULL;
 
-	/* store full inode path */
-	realpath(pathname, w->path);
+	/* store inode path, eventually removing trailing '/' */
+	len = strlcpy(w->path, pathname, PATH_MAX);
+	if (w->path[len - 2] == '/')
+		w->path[len - 2] == '\0';
+
 	w->wd = inotify_add_watch(fd, w->path, mask);
 	if (w->wd < 0) {
 		perror(pathname);
