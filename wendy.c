@@ -36,7 +36,7 @@ char *evname[] = {
 	[IN_MOVE_SELF] =     "MOVE_SELF",
 };
 
-int verbose = 1;
+int verbose = 0;
 
 void
 usage(char *name)
