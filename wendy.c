@@ -155,7 +155,6 @@ main (int argc, char **argv)
 			inotify_rm_watch(fd, e->wd);
 			if ((w->wd = inotify_add_watch(fd, w->path, mask)) < 0)
 				SLIST_REMOVE(&head, w, watcher, entries);
-			break;
 		}
 
 skip:
