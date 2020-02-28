@@ -12,6 +12,7 @@
 #include "strlcpy.h"
 
 #define EVSZ (sizeof(struct inotify_event) + NAME_MAX + 1)
+#define MASK (IN_CREATE|IN_DELETE|IN_MODIFY|IN_MOVE|IN_CLOSE_WRITE)
 
 struct watcher {
 	int wd;
@@ -104,7 +105,7 @@ main (int argc, char **argv)
 {
 	int fd, rflag = 0;
 	uint8_t buf[EVSZ];
-	uint32_t mask = IN_ALL_EVENTS;
+	uint32_t mask = MASK;
 	ssize_t len, off = 0;
 	char path[PATH_MAX];
 	char *argv0 = NULL;
