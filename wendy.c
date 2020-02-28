@@ -45,17 +45,6 @@ usage(char *name)
 	exit(1);
 }
 
-void
-listwatcher(struct watchers *h)
-{
-	struct watcher *tmp;
-
-	fprintf(stderr, "watchlist:\n");
-	SLIST_FOREACH(tmp, h, entries)
-		fprintf(stderr, "%s (%lu)\n", tmp->path, tmp->wd);
-}
-
-
 struct watcher *
 getwatcher(struct watchers *h, int wd)
 {
@@ -66,7 +55,6 @@ getwatcher(struct watchers *h, int wd)
 			return tmp;
 
 	return NULL;
-
 }
 
 struct watcher *
