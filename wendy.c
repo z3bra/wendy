@@ -41,7 +41,7 @@ int verbose = 1;
 void
 usage(char *name)
 {
-	fprintf(stderr, "usage: %s [-v] [-m mask] [-f file] [cmd [args..]]\n", name);
+	fprintf(stderr, "usage: %s [-vr] [-m mask] [-f file]\n", name);
 	exit(1);
 }
 
@@ -102,10 +102,11 @@ wdpath(struct inotify_event *e)
 int
 main (int argc, char **argv)
 {
-	int fd;
+	int fd, rflag = 0;
 	uint8_t buf[EVSZ];
 	uint32_t mask = IN_ALL_EVENTS;
 	ssize_t len, off = 0;
+	char path[PATH_MAX];
 	char *argv0 = NULL;
 	struct watcher *tmp, *w;
 	struct inotify_event *e;
@@ -116,6 +117,9 @@ main (int argc, char **argv)
 		perror("inotify_init");
 
 	ARGBEGIN {
+	case 'r':
+		rflag = 1;
+		break;
 	case 'm':
 		mask = atoi(EARGF(usage(argv0)));
 		break;
@@ -143,6 +147,16 @@ main (int argc, char **argv)
 		if (verbose && e->mask & IN_ALL_EVENTS) {
 			printf("%s\t%s\n", evname[e->mask & IN_ALL_EVENTS], wdpath(e));
 			fflush(stdout);
+		}
+
+		switch(e->mask & IN_ALL_EVENTS) {
+		case IN_CREATE:
+			/* Watch subdirectories upon creation */
+			if (rflag && e->mask & IN_ISDIR) {
+				snprintf(path, PATH_MAX, "%s/%s", w->path, e->name);
+				watch(fd, path, mask);
+			}
+			break;
 		}
 
 		/*
