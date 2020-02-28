@@ -42,7 +42,7 @@ int verbose = 0;
 void
 usage(char *name)
 {
-	fprintf(stderr, "usage: %s [-vr] [-m mask] [-f file]\n", name);
+	fprintf(stderr, "usage: %s [-vdr] [-m mask] [-f file]\n", name);
 	exit(1);
 }
 
@@ -103,7 +103,7 @@ wdpath(struct inotify_event *e)
 int
 main (int argc, char **argv)
 {
-	int fd, rflag = 0;
+	int fd, dflag = 0, rflag = 0;
 	uint8_t buf[EVSZ];
 	uint32_t mask = MASK;
 	ssize_t len, off = 0;
@@ -118,6 +118,9 @@ main (int argc, char **argv)
 		perror("inotify_init");
 
 	ARGBEGIN {
+	case 'd':
+		dflag = 1;
+		break;
 	case 'r':
 		rflag = 1;
 		break;
@@ -133,6 +136,10 @@ main (int argc, char **argv)
 	default:
 		usage(argv0);
 	} ARGEND;
+
+	/* ensure that only directories are watched for */
+	if (dflag)
+		mask |= IN_ONLYDIR;
 
 	while (!SLIST_EMPTY(&head) && (off || (len=read(fd, buf, EVSZ))>0)) {
 
@@ -153,7 +160,7 @@ main (int argc, char **argv)
 		switch(e->mask & IN_ALL_EVENTS) {
 		case IN_CREATE:
 			/* Watch subdirectories upon creation */
-			if (rflag && e->mask & IN_ISDIR) {
+			if (rflag) {
 				snprintf(path, PATH_MAX, "%s/%s", w->path, e->name);
 				watch(fd, path, mask);
 			}
