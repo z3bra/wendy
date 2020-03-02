@@ -75,7 +75,11 @@ watch(int fd, char *pathname, int mask)
 
 	w->wd = inotify_add_watch(fd, w->path, mask);
 	if (w->wd < 0) {
-		perror(pathname);
+		/* triggered when dflag is set, so it is expected */
+		if (errno != ENOTDIR)
+			perror(pathname);
+
+		free(w);
 		return NULL;
 	}
 
@@ -175,8 +179,10 @@ main (int argc, char **argv)
 		 */
 		if (e->mask & IN_IGNORED) {
 			inotify_rm_watch(fd, e->wd);
-			if ((w->wd = inotify_add_watch(fd, w->path, mask)) < 0)
+			if ((w->wd = inotify_add_watch(fd, w->path, mask)) < 0) {
 				SLIST_REMOVE(&head, w, watcher, entries);
+				free(w);
+			}
 		}
 
 skip:
