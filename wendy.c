@@ -42,7 +42,7 @@ int verbose = 0;
 void
 usage(char *name)
 {
-	fprintf(stderr, "usage: %s [-vdr] [-m mask] [-f file] [command [args...]]\n", name);
+	fprintf(stderr, "usage: %s [-vdr] [-m mask] [-w file] [command [args...]]\n", name);
 	exit(1);
 }
 
@@ -132,7 +132,7 @@ main (int argc, char **argv)
 	case 'v':
 		verbose++;
 		break;
-	case 'f':
+	case 'w':
 		watch(fd, EARGF(usage(argv0)), mask);
 		break;
 	default:
