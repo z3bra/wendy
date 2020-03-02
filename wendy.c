@@ -88,10 +88,8 @@ watch(int fd, char *pathname, int mask)
 }
 
 char *
-wdpath(struct inotify_event *e)
+wdpath(struct inotify_event *e, struct watcher *w)
 {
-	int event;
-	struct watcher *w;
 	static char pathname[PATH_MAX];
 
 	if (e->len)
@@ -157,7 +155,7 @@ main (int argc, char **argv)
 		}
 
 		if (verbose && e->mask & IN_ALL_EVENTS) {
-			printf("%s\t%s\n", evname[e->mask & IN_ALL_EVENTS], wdpath(e));
+			printf("%s\t%s\n", evname[e->mask & IN_ALL_EVENTS], wdpath(e, w));
 			fflush(stdout);
 		}
 
