@@ -42,7 +42,7 @@ int verbose = 0;
 void
 usage(char *name)
 {
-	fprintf(stderr, "usage: %s [-vdr] [-m mask] [-f file]\n", name);
+	fprintf(stderr, "usage: %s [-vdr] [-m mask] [-f file] [command [args...]]\n", name);
 	exit(1);
 }
 
@@ -110,7 +110,7 @@ main (int argc, char **argv)
 	uint32_t mask = MASK;
 	ssize_t len, off = 0;
 	char path[PATH_MAX];
-	char *argv0 = NULL;
+	char **cmd, *argv0 = NULL;
 	struct watcher *tmp, *w;
 	struct inotify_event *e;
 
@@ -139,6 +139,9 @@ main (int argc, char **argv)
 		usage(argv0);
 	} ARGEND;
 
+	/* remaining arguments is the command to run on event */
+	cmd = (argc > 0) ? argv : NULL;
+
 	/* ensure that only directories are watched for */
 	if (dflag)
 		mask |= IN_ONLYDIR;
@@ -157,6 +160,20 @@ main (int argc, char **argv)
 		if (verbose && e->mask & IN_ALL_EVENTS) {
 			printf("%s\t%s\n", evname[e->mask & IN_ALL_EVENTS], wdpath(e, w));
 			fflush(stdout);
+		}
+
+		/* orphan process */
+		if (cmd) {
+			if (!fork()) {
+				if (!fork()) {
+					setenv("WENDY_INODE", wdpath(e, w), 1);
+					setenv("WENDY_EVENT", evname[e->mask & IN_ALL_EVENTS], 1);
+					execvp(cmd[0], cmd);
+					return -1; /* NOTREACHED */
+				}
+				return 0;
+			}
+			wait(NULL);
 		}
 
 		switch(e->mask & IN_ALL_EVENTS) {
