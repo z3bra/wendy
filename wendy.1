@@ -3,42 +3,39 @@
 .Os POSIX.1-2008
 .Sh NAME
 .Nm wendy
-.Nd inotify based directory and file watcher
+.Nd inotify based event watcher
 .Sh SYNOPSIS
 .Nm wendy
-.Op Fl lv
+.Op Fl drv
 .Op Fl m Ar mask
-.Op Fl f Ar file
-.Op Fl t Ar timeout
-.Op cmd Op Ar arg..
+.Op Fl w Ar inode
+.Op command Op Ar args...
 .Sh DESCRIPTION
 .Nm
 watches for events in a directory or its files and executes
 .Ar cmd
 when an inotify event is triggered.
 .Bl -tag -width Ds
-.It Fl l
-List mask values to be used with
-.Fl m .
+.It Fl d
+Directory mode. Only directories will be watched, while regular
+files will be skipped (even if explicitely set with -w). See IN_ONLYDIR
+from
+.Xr inotify 7 .
+.It Fl r
+Recursive mode. Everytime an IN_CREATE event is triggered,
+a watch is added on the target file/directory.
 .It Fl v
-Enable verbose mode
+Verbose mode. Each triggered event is printed along with the path,
+as provided on the command line. In the case of directories, the path
+triggering the event is concatenated to the directory path.
 .It Fl m Ar mask
-Sets the mask of events to watch for (default: IN_MODIFY|IN_CLOSE_NOWRITE).
-Refer to the MASKS section of this manual page for more details.
-.It Fl f Ar file
+Sets the mask for events you are interested in (see MASKS for more details).
+default: 970 (IN_CREATE|IN_DELETE|IN_MODIFY|IN_MOVE|IN_CLOSE_WRITE)
+.It Fl w Ar inode
 Specifies the file or directory to watch events in. You can specify multiple
 files by providing the
-.Fl f
+.Fl w
 flag multiple times.
-If no file is specified, then
-.Nm
-will read file names from stdin.
-.It Fl t Ar timeout
-Sets the delay
-.Nm
-will check the file or directory for events.
-.Ar timeout
-is in seconds (default: 1).
 .El
 .Sh MASKS
 The mask is a numeric value passed to inotify to specify the events that should
@@ -59,11 +56,15 @@ IN_CLOSE_WRITE     8
 .It
 IN_CLOSE_NOWRITE   16
 .It
+IN_CLOSE           24
+.It
 IN_OPEN            32
 .It
 IN_MOVED_FROM      64
 .It
 IN_MOVED_TO        128
+.It
+IN_MOVE            192
 .It
 IN_CREATE          256
 .It
@@ -82,33 +83,24 @@ IN_UNMOUNT         8192
 .It Ev WENDY_INODE
 Name of the inode concerned by the event
 .It Ev WENDY_EVENT
-Numeric value of the event triggered
+Name of the event triggered (eg. "CREATE")
 .El
 .Sh EXAMPLES
-.Ss Watch single events
-This command will make wendy play a sound whenever a file is created in the
-direcotry specified. It might be used as a "new mail" notifier.
+.Ss Ring a bell on new mail
+Whenever an IN_CREATE (256) event is triggered, the command is run:
 .Bd -literal -offset Ds
-wendy -m 256 -f ~/Mails/INBOX/new play /usr/share/sound/bell.wav
+wendy -m 256 -w ~/mail/INBOX/new play /usr/share/sound/bell.wav
 .Ed
-.Ss Watch multiple events
-You can watch multiple events by passing the sum of their numerical value to
-the
-.Fl m
-flag. This command will watch both IN_CREATE (256) and IN_DELETE (512) in the
-current directory, and report these events to stdout (same effect as using the
-.Fl v
-flag)
+.Ss Replicate verbose output
+This command uses an external process to print event name and path
+to stdout:
 .Bd -literal -offset Ds
-wendy -m 768 -f . sh -c 'printf "%s\\t%s\\n" $WENDY_EVENT $WENDY_INODE'
+wendy -m 768 -w . sh -c 'echo $WENDY_EVENT $WENDY_INODE'
 .Ed
-.Ss Watch multiple files
-The two following commands are equivalent and will run
-.Xr make 1
-whenever a .c of .h file change.
+.Ss Rebuild a project when source files change
+The mask is the sum of IN_MODIFY + IN_CLOSE_WRITE events:
 .Bd -literal -offset Ds
-wendy -f foo.c -f foo.h -f lib/libbar.c make
-find -name '*.[ch]' | wendy make
+wendy -m 10 -w foo.c -w foo.h -w lib/libbar.c make
 .Ed
 .Sh SEE ALSO
 .Xr inotify 7,
