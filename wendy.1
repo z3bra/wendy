@@ -35,7 +35,11 @@ default: IN_CREATE|IN_DELETE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE|IN_MOVE_SELF|IN_CL
 Specifies the file or directory to watch events in. You can specify multiple
 files by providing the
 .Fl w
-flag multiple times.
+flag multiple times. If no watcher is added with the -w flag,
+.Nm
+will read path names from
+.Ar stdin ,
+one per line.
 .El
 .Sh MASKS
 The mask is a numeric value passed to inotify to specify the events that should

@@ -87,6 +87,22 @@ watch(int fd, char *pathname, int mask)
 	return w;
 }
 
+int
+watchstream(int fd, FILE *stream, int mask)
+{
+	ssize_t l, n = 0;
+	char *p = NULL;
+
+	while (getline(&p, &n, stream) > 0) {
+		l = strlen(p);
+		p[l-1] = '\0';
+		watch(fd, p, mask);
+	}
+	free(p);
+
+	return 0;
+}
+
 char *
 wdpath(struct inotify_event *e, struct watcher *w)
 {
@@ -142,6 +158,9 @@ main (int argc, char **argv)
 	/* ensure that only directories are watched for */
 	if (dflag)
 		mask |= IN_ONLYDIR;
+
+	if (SLIST_EMPTY(&head))
+		watchstream(fd, stdin, mask);
 
 	while (!SLIST_EMPTY(&head) && (off || (len=read(fd, buf, EVSZ))>0)) {
 
