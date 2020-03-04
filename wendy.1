@@ -30,7 +30,7 @@ as provided on the command line. In the case of directories, the path
 triggering the event is concatenated to the directory path.
 .It Fl m Ar mask
 Sets the mask for events you are interested in (see MASKS for more details).
-default: 970 (IN_CREATE|IN_DELETE|IN_MODIFY|IN_MOVE|IN_CLOSE_WRITE)
+default: IN_CREATE|IN_DELETE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE|IN_MOVE_SELF|IN_CLOSE_WRITE
 .It Fl w Ar inode
 Specifies the file or directory to watch events in. You can specify multiple
 files by providing the
