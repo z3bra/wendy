@@ -92,13 +92,11 @@ wdpath(struct inotify_event *e, struct watcher *w)
 {
 	static char pathname[PATH_MAX];
 
+	strlcpy(pathname, w->path, PATH_MAX);
 	if (e->len)
 		snprintf(pathname, PATH_MAX, "%s/%s", w->path, e->name);
-	else
-		strlcpy(pathname, w->path, PATH_MAX);
 
 	return pathname;
-
 }
 
 
