@@ -109,7 +109,6 @@ main (int argc, char **argv)
 	uint8_t buf[EVSZ];
 	uint32_t mask = MASK;
 	ssize_t len, off = 0;
-	char path[PATH_MAX];
 	char **cmd, *argv0 = NULL;
 	struct watcher *tmp, *w;
 	struct inotify_event *e;
@@ -176,28 +175,26 @@ main (int argc, char **argv)
 			wait(NULL);
 		}
 
-		switch(e->mask & IN_ALL_EVENTS) {
+		switch(e->mask & IN_ALL_EVENTS|IN_IGNORED) {
 		case IN_CREATE:
 			/* Watch subdirectories upon creation */
-			if (rflag) {
-				snprintf(path, PATH_MAX, "%s/%s", w->path, e->name);
-				watch(fd, path, mask);
-			}
+			if (rflag)
+				watch(fd, wdpath(e, w), mask);
 			break;
-		}
 
 		/*
 		 * IN_IGNORED is triggered when a file watched
 		 * doesn't exists anymore. In this case we first try to
-		 * add the watcher back, and if it fails, remove the
-		 * watcher completely.
+		 * watch it again (in case it was recreated), and if it
+		 * fails, remove the watcher completely.
 		 */
-		if (e->mask & IN_IGNORED) {
+		case IN_IGNORED:
 			inotify_rm_watch(fd, e->wd);
 			if ((w->wd = inotify_add_watch(fd, w->path, mask)) < 0) {
 				SLIST_REMOVE(&head, w, watcher, entries);
 				free(w);
 			}
+			break;
 		}
 
 skip:
