@@ -38,12 +38,20 @@ char *evname[] = {
 };
 
 int verbose = 0;
+int aflag = 0, dflag = 0, rflag = 0;
 
 void
 usage(char *name)
 {
-	fprintf(stderr, "usage: %s [-vdr] [-m mask] [-w file] [command [args...]]\n", name);
+	fprintf(stderr, "usage: %s [-adrv] [-m mask] [-w file] [command [args...]]\n", name);
 	exit(1);
+}
+
+char *
+basename(char *p)
+{
+	char *b = strrchr(p, '/');
+	return *b ? b + 1 : p;
 }
 
 struct watcher *
@@ -119,7 +127,7 @@ wdpath(struct inotify_event *e, struct watcher *w)
 int
 main (int argc, char **argv)
 {
-	int fd, dflag = 0, rflag = 0;
+	int fd;
 	uint8_t buf[EVSZ];
 	uint32_t mask = MASK;
 	ssize_t len, off = 0;
@@ -133,6 +141,9 @@ main (int argc, char **argv)
 		perror("inotify_init");
 
 	ARGBEGIN {
+	case 'a':
+		aflag = 1;
+		break;
 	case 'd':
 		dflag = 1;
 		break;
@@ -172,6 +183,10 @@ main (int argc, char **argv)
 			inotify_rm_watch(fd, e->wd);
 			goto skip;
 		}
+
+		/* skip hidden files when aflag is not set */
+		if (!aflag && basename(wdpath(e, w))[0] == '.')
+			goto skip;
 
 		if (verbose && e->mask & IN_ALL_EVENTS) {
 			printf("%s\t%s\n", evname[e->mask & IN_ALL_EVENTS], wdpath(e, w));
