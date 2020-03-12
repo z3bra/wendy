@@ -6,7 +6,7 @@
 .Nd inotify based event watcher
 .Sh SYNOPSIS
 .Nm wendy
-.Op Fl drv
+.Op Fl adrv
 .Op Fl m Ar mask
 .Op Fl w Ar inode
 .Op command Op Ar args...
@@ -16,6 +16,9 @@ watches for events in a directory or its files and executes
 .Ar cmd
 when an inotify event is triggered.
 .Bl -tag -width Ds
+.It Fl a
+Hidden mode. Entries whose name start with a . will be listed and trigger
+an event.
 .It Fl d
 Directory mode. Only directories will be watched, while regular
 files will be skipped (even if explicitely set with -w). See IN_ONLYDIR
