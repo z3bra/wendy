@@ -225,7 +225,7 @@ main (int argc, char **argv)
 			wait(NULL);
 		}
 
-		switch(e->mask & IN_ALL_EVENTS|IN_IGNORED) {
+		switch(e->mask & (IN_ALL_EVENTS|IN_IGNORED)) {
 		case IN_CREATE:
 			/* Watch subdirectories upon creation */
 			if (rflag)
