@@ -22,7 +22,7 @@ struct watcher {
 
 SLIST_HEAD(watchers, watcher) head;
 
-char *evname[] = {
+char *evname[IN_ALL_EVENTS] = {
 	[IN_ACCESS] =        "ACCESS",
 	[IN_MODIFY] =        "MODIFY",
 	[IN_ATTRIB] =        "ATTRIB",
@@ -38,7 +38,7 @@ char *evname[] = {
 };
 
 int verbose = 0;
-int aflag = 0, dflag = 0, rflag = 0;
+int aflag = 0, dflag = 0, lflag = 0, rflag = 0;
 
 void
 usage(char *name)
@@ -52,6 +52,16 @@ basename(char *p)
 {
 	char *b = strrchr(p, '/');
 	return *b ? b + 1 : p;
+}
+
+int
+listevents(char **ev)
+{
+	int i;
+	for (i=0; i<IN_ALL_EVENTS; i++)
+		if (ev[i])
+			printf("%s\t%d\n", ev[i], i);
+	return 0;
 }
 
 struct watcher *
@@ -147,6 +157,9 @@ main (int argc, char **argv)
 	case 'd':
 		dflag = 1;
 		break;
+	case 'l':
+		lflag = 1;
+		break;
 	case 'r':
 		rflag = 1;
 		break;
@@ -162,6 +175,11 @@ main (int argc, char **argv)
 	default:
 		usage(argv0);
 	} ARGEND;
+
+	if (lflag) {
+		listevents(evname);
+		return 0;
+	}
 
 	/* remaining arguments is the command to run on event */
 	cmd = (argc > 0) ? argv : NULL;

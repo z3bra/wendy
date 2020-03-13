@@ -6,7 +6,7 @@
 .Nd inotify based event watcher
 .Sh SYNOPSIS
 .Nm wendy
-.Op Fl adrv
+.Op Fl adlrv
 .Op Fl m Ar mask
 .Op Fl w Ar inode
 .Op command Op Ar args...
@@ -24,6 +24,8 @@ Directory mode. Only directories will be watched, while regular
 files will be skipped (even if explicitely set with -w). See IN_ONLYDIR
 from
 .Xr inotify 7 .
+.It Fl l
+List events along with their numeric values.
 .It Fl r
 Recursive mode. Everytime an IN_CREATE event is triggered,
 a watch is added on the target file/directory.
