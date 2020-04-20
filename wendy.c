@@ -51,7 +51,7 @@ char *
 basename(char *p)
 {
 	char *b = strrchr(p, '/');
-	return *b ? b + 1 : p;
+	return b ? b + 1 : p;
 }
 
 int
