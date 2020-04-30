@@ -46,43 +46,36 @@ that's pretty cool!
 Here are some examples:
 
     # Tell me whenever I have a new mail
-    wendy -m 256 -d ~/mails/INBOX/new -t 60 -e espeak "You got a new mail"
+    wendy -m 256 -w ~/mails/INBOX/new espeak "You got a new mail"
 
     # On-the-fly recompilation
-    wendy -l | grep -i close_write
-    IN_CLOSE_WRITE ... 8
-    find -name "*.c" | wendy -m 8 -q -d ~/src/dev/program/ -t 1 -e make
+    wendy -m 138 -w ~/src/dev/program/ make
 
+    # Run a script against all files create in a directory
+    wendy -m 256 -w $HOME/autoupload sh -c '/usr/local/bin/upload.sh $WENDY_INODE'
 
-    # Get up to date with community based projects
-    wendy -m 770 -f /mnt/nfs/project/ -t 30 -e popup 'project updated'
-
-    # watch creation in the directory, and modifications on a file
-    wendy -m 256 -f ./my_dir -m 8 -f file.txt -e echo awesome!
+    # watch different events for different files
+    wendy -m 256 -w ./directory -m 8 -w ./file.txt
 
 FAQ
 ===
 
 > Can it work on a folder and sub folders ?
 
-It does not. inotify does not handle this by default, and implementing this
-would make the code grow in complexity to a level I don't want to reach.
-But you could do something like:
+Yes. By using two flags: `-r` and `-d`. The former will enable "recursive
+mode", which will add a new watch on every node trigerring an IN_CREATE
+event (note: you MUST add this even to the mask).
+The latter (`-d`) will ignore every inode that is not a directory when
+adding watches. This one is not mandatory, but could create duplicate
+events reports by watching the same events on a directory, and each file
+in this directory.
 
-    $ tree
-    .
-    ├── a
-    ├── b
-    │   ├── c
-    │   └── d
-    └── e
-
-    5 directories, 0 files
-
-    $ find a -type d | wendy -m 256 -v | cut -f2
-
-That will add a watch to each directory, and output the names of the file
-created (eg: "a/b/newfile").
+Note: Because of the way inotify works, it is possible to encounter race
+conditions when creating multiple levels on directories. Specifically,
+when watching a directory "a", and doing `mkdir -p a/b/c`, the directory
+"c" will most likely not be watched, because it was created before the
+watcher on "b" was added. A workaround is to do it in multiple steps,
+to give enough time to wendy to add the necessary watchers.
 
 ---
 
@@ -102,13 +95,9 @@ still prefer using wendy because of this:
     * inotifywait exits upon event reception [1]
     * inotifywait does not allow to launch a command on event reception [2]
     * inotifywait with multiple events can end in an infinite line [3]
-    * inotifywait cna't read names from stdin
     * inotifywait only handle the file modification event (eg, wendy can use
       the IN_ONLYDIR mask)
-    * inotifywait exits right when an event occur, wendy can treat all queued
-      events at a specific period
-    * inotify-tools : 164kb against 12kb for wendy (ok, not that relevant)
-    * I like the name 'wendy' better
+    * 'wendy' is shorter/cooler to type!
 
 [1] I'm aware of the '--monitor' flag, but the only way to exec a command with
 this is a pain that implies read, a while loop and so on.
@@ -122,7 +111,7 @@ like:
         inotifywait -e <event> ~/path/to/my/file && command
     done
 
-Good luck with this, I prefer "wendy -m <mask> -e command"
+Good luck with this, I prefer "wendy -m <mask> command"
 
 [3] one flag per event. events written in words:
 
@@ -130,10 +119,4 @@ Good luck with this, I prefer "wendy -m <mask> -e command"
 
 I prefer
 
-        wendy -m 774 -f ~/path/to/my/file
-
----
-
-> Would you prefer to fight one horse sized duck, or 10 duck sized horses ?
-
-Regarding size and number, I'd rather fight horses. Ducks are silly creatures.
+        wendy -m 774 -w ~/path/to/my/file
