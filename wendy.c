@@ -88,8 +88,8 @@ watch(int fd, char *pathname, int mask)
 
 	/* store inode path, eventually removing trailing '/' */
 	len = strlcpy(w->path, pathname, PATH_MAX);
-	if (w->path[len - 2] == '/')
-		w->path[len - 2] == '\0';
+	if (w->path[len - 1] == '/')
+		w->path[len - 1] == '\0';
 
 	w->wd = inotify_add_watch(fd, w->path, mask);
 	if (w->wd < 0) {
