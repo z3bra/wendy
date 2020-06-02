@@ -89,7 +89,7 @@ watch(int fd, char *pathname, int mask)
 	/* store inode path, eventually removing trailing '/' */
 	len = strlcpy(w->path, pathname, PATH_MAX);
 	if (w->path[len - 1] == '/')
-		w->path[len - 1] == '\0';
+		w->path[len - 1] = '\0';
 
 	w->wd = inotify_add_watch(fd, w->path, mask);
 	if (w->wd < 0) {
@@ -108,7 +108,7 @@ watch(int fd, char *pathname, int mask)
 int
 watchstream(int fd, FILE *stream, int mask)
 {
-	ssize_t l, n = 0;
+	size_t l, n = 0;
 	char *p = NULL;
 
 	while (getline(&p, &n, stream) > 0) {
@@ -124,11 +124,15 @@ watchstream(int fd, FILE *stream, int mask)
 char *
 wdpath(struct inotify_event *e, struct watcher *w)
 {
+	size_t len;
 	static char pathname[PATH_MAX];
 
-	strlcpy(pathname, w->path, PATH_MAX);
-	if (e->len)
-		snprintf(pathname, PATH_MAX, "%s/%s", w->path, e->name);
+	len = strlcpy(pathname, w->path, PATH_MAX);
+	if (e->len) {
+		strncat(pathname, "/", PATH_MAX - len - 1);
+		len = strnlen(pathname, PATH_MAX - 1);
+		strncat(pathname, e->name, PATH_MAX - len - 1);
+	}
 
 	return pathname;
 }
@@ -142,7 +146,7 @@ main (int argc, char **argv)
 	uint32_t mask = MASK;
 	ssize_t len, off = 0;
 	char **cmd, *argv0 = NULL;
-	struct watcher *tmp, *w;
+	struct watcher *w;
 	struct inotify_event *e;
 
 	/* get file descriptor */
