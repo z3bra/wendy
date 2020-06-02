@@ -4,4 +4,4 @@ CFLAGS  =
 LDFLAGS = 
 
 PREFIX = /usr/local
-MANDIR = $(PREFIX)/man
+MANPREFIX = ${PREFIX}/man
