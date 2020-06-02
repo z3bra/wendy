@@ -95,24 +95,35 @@ Name of the inode concerned by the event
 Name of the event triggered (eg. "CREATE")
 .El
 .Sh EXAMPLES
-.Ss Ring a bell on new mail
-Whenever an IN_CREATE (256) event is triggered, the command is run:
-.Bd -literal -offset Ds
-wendy -m 256 -w ~/mail/INBOX/new play /usr/share/sound/bell.wav
+Whenever an IN_CREATE (256) event is triggered in the Maildir folder
+INBOX, a sound is played:
+.Bd -literal
+  wendy -m 256 -w ~/mail/INBOX/new play /usr/share/sound/bell.wav
 .Ed
-.Ss Replicate verbose output
-This command uses an external process to print event name and path
-to stdout:
-.Bd -literal -offset Ds
-wendy -m 768 -w . sh -c 'echo $WENDY_EVENT $WENDY_INODE'
+.Pp
+Use a sub-shell to print event name and path to stdout, showcasing the
+variables exported internally (this replicates the
+.Fl v
+switch):
+.Bd -literal
+  wendy -m 768 -w . sh -c 'echo $WENDY_EVENT $WENDY_INODE'
 .Ed
-.Ss Rebuild a project when source files change
-The mask is the sum of IN_MODIFY + IN_CLOSE_WRITE events:
-.Bd -literal -offset Ds
-find . -name '*.[ch]' | wendy make
+.Pp
+Rebuild a project when one of its source files changes:
+.Bd -literal
+  find . -name '*.[ch]' | wendy make
+.Ed
+.Pp
+This example will only watch directory nodes, and will monitor every
+new directory created, thus propagating event monitoring inside the tree.
+Note that events happening on files withing these directories will
+still be reported, making the following command suitable for
+synchronizing two directories:
+.Bd -literal
+  find /src -type d | wendy -rd -m 970 rsync -av --delete /src /dest
 .Ed
 .Sh SEE ALSO
-.Xr inotify 7,
-.Xr entr 1
+.Xr inotify 7 ,
+.Xr rsync 1
 .Sh AUTHORS
 .An Willy Goiffon Aq Mt dev@z3bra.org
