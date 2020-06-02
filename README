@@ -18,17 +18,19 @@ Usage
 Refer to wendy(1) manual page for details and examples.
 The below commands are provided as a quick introduction.
 
-These commands will helps you recompile a project, preview the manual
-page and upload it to a remote location (each running in a separate
-terminal):
+Recompile a project when a source file changes:
 
 	ls *.[ch] | wendy make
-	wendy -w manual.1 sh -c 'clear;PAGER=cat man ./$WENDY_INODE'
-	wendy -rd -m 394 -w . rsync -av . remote:/dest
 
-Note: the numerical value "394" is a combination of event: MODIFY,
-CLOSE_WRITE, MOVED_TO, CREATE. See `MASKS` in wendy(1) for all supported
-events and their numeric values.
+Dynamic preview of a manual page (note the use of simple quotes):
+
+	export MANPAGER=/bin/cat
+	wendy -w manual.1 sh -c 'clear; man ./$WENDY_INODE'
+
+Synchronize the local directory with a remote one. The value `394`
+is a sum of events: `MODIFY, CLOSE_WRITE, MOVED_TO, CREATE`:
+
+	wendy -rd -m 394 -w . rsync -av . remote:/dest
 
 Installation
 -----
