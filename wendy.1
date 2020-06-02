@@ -109,7 +109,7 @@ wendy -m 768 -w . sh -c 'echo $WENDY_EVENT $WENDY_INODE'
 .Ss Rebuild a project when source files change
 The mask is the sum of IN_MODIFY + IN_CLOSE_WRITE events:
 .Bd -literal -offset Ds
-wendy -m 10 -w foo.c -w foo.h -w lib/libbar.c make
+find . -name '*.[ch]' | wendy make
 .Ed
 .Sh SEE ALSO
 .Xr inotify 7,
