@@ -1,7 +1,10 @@
 CC = cc
-LD = $(CC)
-CFLAGS  =
-LDFLAGS = 
+LD = ${CC}
 
 PREFIX = /usr/local
 MANPREFIX = ${PREFIX}/man
+
+CPPFLAGS =
+CFLAGS  = -Wall -Wextra -pedantic
+LDFLAGS = 
+LIBS =
