@@ -1,122 +1,38 @@
-  ╻ ╻┏━╸┏┓╻╺┳┓╻ ╻
-  ┃╻┃┣╸ ┃┗┫ ┃┃┗┳┛
-  ┗┻┛┗━╸╹ ╹╺┻┛ ╹
-                -- by z3bra
-===========================
+wendy
+=====
+Inotify-based directory watcher.
 
-(W)atch (EN)tire (D)irector(Y) is an inotify-based directory watcher.
+An arbitrary command is run whenever one or more filesystem events occur.
+Events are reported through the inotify API, which is specific to the
+Linux kernel.
 
-With wendy, you can watch event in directories or files, and launch a
-specific command when an event occurs.
+Features
+-----
+- Event(s) selection done with bitwise mask
+- Automatically watch new directories in recursive mode
+- Exports event informations in the command environment
+- Path can be specified as argument or from `STDIN`.
 
-The program is made the more simple possible, to leave the room to unlimited
-uses. Be creative !
+Usage
+-----
+Refer to wendy(1) manual page for details and examples.
+The below commands are provided as a quick introduction.
 
-Every event raised by inotify is handled. Just sum them up to watch multiple
-event at the same time. Here is the full table:
-(see inotify(1) for a better explanation of those events)
+These commands will helps you recompile a project, preview the manual
+page and upload it to a remote location (each running in a separate
+terminal):
 
-    IN_ACCESS ........ 1
-    IN_MODIFY ........ 2
-    IN_ATTRIB ........ 4
-    IN_CLOSE_WRITE ... 8
-    IN_CLOSE_NOWRITE . 16
-    IN_OPEN .......... 32
-    IN_MOVED_FROM .... 64
-    IN_MOVED_TO ...... 128
-    IN_CREATE ........ 256
-    IN_DELETE ........ 512
-    IN_DELETE_SELF ... 1024
-    IN_MOVE_SELF ..... 2048
+	ls *.[ch] | wendy make
+	wendy -w manual.1 sh -c 'clear;PAGER=cat man ./$WENDY_INODE'
+	wendy -rd -m 394 -w . rsync -av . remote:/dest
 
-To watch for both creation AND deletion in a directory, do some math:
+Note: the numerical value "394" is a combination of event: MODIFY,
+CLOSE_WRITE, MOVED_TO, CREATE. See `MASKS` in wendy(1) for all supported
+events and their numeric values.
 
-    256 + 512 = 768
+Installation
+-----
+Edit config.mk if needed, then build/install with the following commands:
 
-then, pass that value to wendy so that she can watch after both of them (did I
-just say 'she'?).
-
-You can also note that you can specify file/directory names either using the
--f flag, or from stdin (in this case, the -f flag must be omited).
-As a hidden feature, the watch mask is changed everytime the -m flag is
-provided, and the inotify watches are set everytime the -f flag is given. So
-you can wathc different mask on different file using the same command, and
-that's pretty cool!
-
-Here are some examples:
-
-    # Tell me whenever I have a new mail
-    wendy -m 256 -w ~/mails/INBOX/new espeak "You got a new mail"
-
-    # On-the-fly recompilation
-    wendy -m 138 -w ~/src/dev/program/ make
-
-    # Run a script against all files create in a directory
-    wendy -m 256 -w $HOME/autoupload sh -c '/usr/local/bin/upload.sh $WENDY_INODE'
-
-    # watch different events for different files
-    wendy -m 256 -w ./directory -m 8 -w ./file.txt
-
-FAQ
-===
-
-> Can it work on a folder and sub folders ?
-
-Yes. By using two flags: `-r` and `-d`. The former will enable "recursive
-mode", which will add a new watch on every node trigerring an IN_CREATE
-event (note: you MUST add this even to the mask).
-The latter (`-d`) will ignore every inode that is not a directory when
-adding watches. This one is not mandatory, but could create duplicate
-events reports by watching the same events on a directory, and each file
-in this directory.
-
-Note: Because of the way inotify works, it is possible to encounter race
-conditions when creating multiple levels on directories. Specifically,
-when watching a directory "a", and doing `mkdir -p a/b/c`, the directory
-"c" will most likely not be watched, because it was created before the
-watcher on "b" was added. A workaround is to do it in multiple steps,
-to give enough time to wendy to add the necessary watchers.
-
----
-
-> Can you explain why this exists? Doesn't inotifywait (from inotify-tools) do
-> this exact same thing?
-
-When I first started wendy, I was not aware of inotifywait. It was just a good
-programming exercise.
-
-With the time, I found wendy more and more useful, and added a few options to
-make it faster and more 'generic' (It was first created to watch my mail
-directory, to alert me of new mails).
-
-Today, I know that inotifywait can be used for everything wendy does Anyway, I
-still prefer using wendy because of this:
-
-    * inotifywait exits upon event reception [1]
-    * inotifywait does not allow to launch a command on event reception [2]
-    * inotifywait with multiple events can end in an infinite line [3]
-    * inotifywait only handle the file modification event (eg, wendy can use
-      the IN_ONLYDIR mask)
-    * 'wendy' is shorter/cooler to type!
-
-[1] I'm aware of the '--monitor' flag, but the only way to exec a command with
-this is a pain that implies read, a while loop and so on.
-
-[2] In fact, you can, by doing "inotifywait -e <event> && command", and
-wrapping it in a while loop. Well, don't forget to add a test to see if your
-file still exists, to avoid infinite buggy loops. You'll end up with something
-like:
-
-    while test -e ~/path/to/my/file; do
-        inotifywait -e <event> ~/path/to/my/file && command
-    done
-
-Good luck with this, I prefer "wendy -m <mask> command"
-
-[3] one flag per event. events written in words:
-
-    inotifywait -e access -e create -e delete -e modify -e attrib /path/to/file
-
-I prefer
-
-        wendy -m 774 -w ~/path/to/my/file
+	make
+	make install
